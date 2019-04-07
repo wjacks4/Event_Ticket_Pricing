@@ -115,14 +115,14 @@ def EVENT_DETAILS():
 			event_prices = json_Dat['priceRanges']
 			print(event_prices[0]['min'])
 			
-			TEST=pd.DataFrame([[event_name, event_venue, event_city, event_dates['start']['localDate'], event_sales['public']['startDateTime'], event_prices[0]['min'] ]], 
+			event_profile=pd.DataFrame([[event_name, event_venue, event_city, event_dates['start']['localDate'], event_sales['public']['startDateTime'], event_prices[0]['min'] ]], 
 							columns=['attraction_name', 'venue', 'city', 'event_date', 'sale_start_date', 'lowest_face_val_price'])			
 			
 		except KeyError as No_Price_Data:
 			
 			print('No Price Data Available')
 			
-			TEST=pd.DataFrame([[event_name, event_venue, event_city, event_dates['start']['localDate'], event_sales['public']['startDateTime'], '' ]], 
+			event_profile=pd.DataFrame([[event_name, event_venue, event_city, event_dates['start']['localDate'], event_sales['public']['startDateTime'], '' ]], 
 						columns=['attraction_name', 'venue', 'city', 'event_date', 'sale_start_date', 'lowest_face_val_price'])			
 
 			
@@ -136,23 +136,16 @@ def EVENT_DETAILS():
 			
 		#	each_event = pd.DataFrame([[event_name, venue, city]], columns=['attraction_name', 'venue', 'city'])
 			
-		event_df = event_df.append(TEST)
+		event_df = event_df.append(event_profile)
 			
 		time.sleep(.25)
 			
-			
-		
-			
-		
-			
-		
 	event_df.to_csv('C:/Users/whjac/Desktop/Ticket Flipping/Event_Ticket_Pricing/Data/Ticketmaster_event_list.csv', index=False)
 	
 	print(event_df)
 	
 	return event_df
-			
-			
+						
 EVENT_DETAILS()
 
 
