@@ -89,8 +89,6 @@ def PAYLOAD_METHOD(performer_slug, city):
 	print(no_listings)
 	
 	
-	
-	
 PAYLOAD_METHOD('DaBaby', 'Denver')
 
 
