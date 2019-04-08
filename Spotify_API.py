@@ -18,15 +18,21 @@ import requests
 import urllib
 from urllib import parse
 
+#---------------------------------#
+#----------GLOBAL DATA------------#
+#---------------------------------#
+
 Spotify_client_ID = 'ab3b70083f5f469188f8e49b79d5eadb'
 
 Spotify_client_secret = '6ecf81925e2740c9adecaad28685457a'
 
-base_endpoint = 'https://api.spotify.com/v1'
+#base_endpoint = 'https://api.spotify.com/v1'
 
+#authorization_endpoint = 'https://accounts.spotify.com/authorize?response_type=code&client_id='
 
-authorization_endpoint = 'https://accounts.spotify.com/authorize?response_type=code&client_id='
-
+#----------------------------------------------------------------#
+#---GENERATE MY ACCESS TOKEN TO USE THROUGHOUT REST OF PROGRAM---#
+#----------------------------------------------------------------#
 
 def generate_token():
 	
@@ -42,20 +48,24 @@ def generate_token():
 generate_token()
 
 
+#---------------------------------------------------#
+#---CALL THE SPOTIPY LIBRARY WITH GENERATED TOKEN---#
+#---------------------------------------------------#
 
 spotify = spotipy.Spotify(auth=generate_token())
 
-def playlist_search():
+class Playlist_Search ():
 
+	def ID_Gen():
 
-	raw_Dat = spotify.search(q='rap caviar', type='playlist')			
-	
-	playlist_ID = raw_Dat['playlists']['items'][0]['id']
-	
-	print(playlist_ID)
-	
+		raw_Dat = spotify.search(q='rap caviar', type='playlist')			
+		
+		playlist_ID = raw_Dat['playlists']['items'][0]['id']
+		
+		print(playlist_ID)
+		
 
-playlist_search()	
+	playlist_search()	
 
 
 
