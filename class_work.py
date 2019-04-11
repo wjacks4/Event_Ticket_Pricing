@@ -20,14 +20,14 @@ from urllib import parse
 
 
 
-class Employee:
+class Employee_v1:
 	pass
 
 
 #BOTH OF THESE ARE 'INSTANCES' OF THE EMPLOYEE CLASS#
 
-emp_1 = Employee()
-emp_2 = Employee()
+emp_1 = Employee_v1()
+emp_2 = Employee_v1()
 
 
 print(emp_1)
@@ -52,4 +52,38 @@ print(emp_1.last)
 
 print(emp_2.first)
 print(emp_2.last)
+
+
+#--------------OK NOW WE START USING INIT METHODS---------------#
+
+
+class Employee_v2:
+
+	#THIS IS AN 'INSTANCE'#
+	#IT RECEIVES THE INSTANCE OF THE CLASS AS ITS FIRST ARGUMENT AUTOMATICALLY#
+	#THE INSTANCE IS USUALLY CALLED 'SELF'#
+	
+	def __init__(self, first, last, pay):
+		self.first = first
+		self.last = last
+		self.pay = pay
+
+		
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

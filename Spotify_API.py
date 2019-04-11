@@ -30,7 +30,7 @@ Spotify_Playlist_list = pd.read_csv('C:/Users/whjac/Desktop/Ticket Flipping/Even
 
 sample = Spotify_Playlist_list.head(2)
 
-print(Spotify_Playlist_list)
+#print(Spotify_Playlist_list)
 
 
 
@@ -46,7 +46,7 @@ def generate_token():
 	)
 	
 	token = credentials.get_access_token()
-	print(token)
+	#print(token)
 	return token
 
 generate_token()
@@ -60,43 +60,88 @@ generate_token()
 spotify = spotipy.Spotify(auth=generate_token())
 
 
+#FUNCTION TO PULL IDS FOR ALL CHOSEN SPOTIFY PLAYLISTS#
+
 def ID_Gen(name):
 
 	raw_Dat = spotify.search(q=name, type='playlist')
 
 	encoded_Dat = str(raw_Dat).encode('utf-8')	
 	
-	#print(encoded_Dat)
-	
 	playlist_ID = raw_Dat['playlists']['items'][0]['id']
 	playlist_Name = raw_Dat['playlists']['items'][0]['name']
+	playlist_User = raw_Dat['playlists']['items'][0]['owner']['id']
 	
-	print(playlist_ID)	
-	print(playlist_Name)
+	#print(playlist_ID)	
+	#print(playlist_Name)
+	#print(playlist_User)
 	
-	return playlist_ID
+	return playlist_ID, playlist_User
 	
+	
+	
+#FUNCTION TO RETURN ARRAY OF ARTISTS FROM A GIVEN PLAYLIST#
 
+def Playlist_Artists(user_in, ID_in):
+
+		raw_dat = spotify.user_playlist_tracks(user = user_in, playlist_id = ID_in)
+		artist_array= []
+		song_list = raw_dat['items']
+		
+		for song in song_list:
+			
+			artists = song['track']['artists']
+			
+			for artist in artists:
+				
+				#artist_encode = artist.encode('utf-8')
+				#artist_decode = unidecode(str(artist_encode, encoding = "utf-8"))	
+				
+				
+				artist_name = unidecode(str( (artist['name'].encode('utf-8')), encoding="utf-8"))
+				artist_array.append(artist_name)
+				
+		return(artist_array)
+				
+	
+	
 playlist_IDs=pd.DataFrame()
 
+
 for playlist in Spotify_Playlist_list.iterrows():
-#for playlist in sample.iterrows():
 
 	title=("'" + (playlist[1]['Playlist Name']) + "'")
 	
 	playlist_Name = (playlist[1]['Playlist Name'])
 	genre=(playlist[1]['Genre'])
 
-	print(title)
-
-	playlist_ID = ID_Gen(title)
+	playlist_ID = ID_Gen(title)[0]
+	playlist_User = ID_Gen(title)[1]
 	
-	each_Playlist = pd.DataFrame([[playlist_Name, genre, playlist_ID]], columns=['Playlist_Name', 'Genre', 'playlist_ID'])
+	each_Playlist = pd.DataFrame([[playlist_Name, genre, playlist_ID, playlist_User]], columns=['playlist_Name', 'genre', 'playlist_ID', 'playlist_User'])
 	
 	playlist_IDs = playlist_IDs.append(each_Playlist)
+
+
+
+for playlist_ID in playlist_IDs.iterrows():
+	
+	each_Name = ((playlist_ID[1]['playlist_Name']))
+	each_genre = ((playlist_ID[1]['genre']))
+	each_ID = ((playlist_ID[1]['playlist_ID']))
+	each_User = ((playlist_ID[1]['playlist_User']))
+
+	Artists_list = Playlist_Artists(each_User, each_ID)
+	
+	print(each_Name)
+	print(each_genre)
+	print(each_ID)
+	print(Artists_list)
+	
 	
 
-print(playlist_IDs)
+
+
 
 
 
