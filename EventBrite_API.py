@@ -24,3 +24,52 @@ from spotipy.client import Spotify
 import requests
 import urllib
 from urllib import parse
+import sys
+import base64
+
+
+API_key = "QBBZEWV5XWAAFECR3D"
+
+API_secret = "7NG5DUZEJBCIGLFJWZRTQ3R7SE3UXUDCA4DFD7U3MFC57UQF45"
+
+OAuth_token = "ZG7IKNHFJFFYSXDN4R5K"
+
+Anon_OAuth_token = "SWIBI6XDBCO2UP5AOA7Y"
+
+
+base_string = "https://www.eventbriteapi.com/v3/events/search/?token=ZG7IKNHFJFFYSXDN4R5K&"
+
+
+test_db = pd.read_csv("C:/Users/whjac/Desktop/Ticket Flipping/Event_Ticket_Pricing/Data/test.csv")
+
+sample = test_db.head(3)
+
+print(sample)
+
+
+def EventBrite_Artist_Search(df):
+
+	sample = df.head(3)
+	
+	artists = sample['Artist']
+	
+	for artist in artists:
+		
+		artist_encode = artist.replace(" ", "%20")
+		
+		artist_url = (base_string + "q=" + artist_encode)
+		
+		print(artist_url)
+		
+		req = urllib.request.Request(artist_url)
+		
+		req.add_header('Content-Type' , 'application/json')
+		
+		rawdat = urllib.request.urlopen(req)
+		
+		print(rawdat.json)
+		
+		
+		
+EventBrite_Artist_Search(test_db)
+
