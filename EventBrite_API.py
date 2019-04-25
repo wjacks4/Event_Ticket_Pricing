@@ -56,18 +56,37 @@ def EventBrite_Artist_Search(df):
 	for artist in artists:
 		
 		artist_encode = artist.replace(" ", "%20")
-		
 		artist_url = (base_string + "q=" + artist_encode)
 		
-		print(artist_url)
+		rawdat = urllib.request.urlopen(artist_url)
+		encoded_dat = rawdat.read().decode('utf-8', errors='ignore')
 		
-		req = urllib.request.Request(artist_url)
+		print(rawdat)
 		
-		req.add_header('Content-Type' , 'application/json')
+		json_dat = json.loads(encoded_dat)
+		events = json_dat['events']
 		
-		rawdat = urllib.request.urlopen(req)
+		for event in events:
 		
-		print(rawdat.json)
+			name = event['name']
+			id = event['id']
+			start = event['start']
+			end = event['end']
+			capacity = event['capacity']
+			listed = event['listed']
+			shareable = event['shareable']
+			venue_id = event['venue_id']
+			
+			print(name)
+			for obj in event:
+				print(obj)
+	
+
+		
+		#print(json_dat)
+		
+		
+
 		
 		
 		

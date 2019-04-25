@@ -66,7 +66,7 @@ def ID_Gen(name):
 
 	raw_Dat = spotify.search(q=name, type='playlist')
 
-	encoded_Dat = str(raw_Dat).encode('utf-8')	
+	encoded_Dat = str(raw_Dat).encode('utf-8')
 	
 	playlist_ID = raw_Dat['playlists']['items'][0]['id']
 	playlist_Name = raw_Dat['playlists']['items'][0]['name']
