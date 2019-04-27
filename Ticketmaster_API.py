@@ -102,7 +102,7 @@ def EVENT_DETAILS():
 		raw_Data=urllib.request.urlopen(event_url)
 
 		#print(rawData.read())
-			
+		
 		encoded_Dat = raw_Data.read().decode('utf-8', 'ignore')			
 		json_Dat = json.loads(encoded_Dat)
 		event_venue = json_Dat['_embedded']['venues'][0]['name']
@@ -110,19 +110,24 @@ def EVENT_DETAILS():
 		event_dates= json_Dat['dates']
 		event_sales = json_Dat['sales']
 		event_name = json_Dat['name']
+		event_start_date = json_Dat['dates']['start']['localDate']
+		event_sale_start = json_Dat['sales']['public']['startDateTime']
+
 		
 		try: 
-			event_prices = json_Dat['priceRanges']
-			print(event_prices[0]['min'])
+		
+			event_lowest_price = json_Dat['priceRanges'][0]['min']
+
+			print(json_Dat['priceRanges'][0]['min'])
 			
-			event_profile=pd.DataFrame([[event_name, event_venue, event_city, event_dates['start']['localDate'], event_sales['public']['startDateTime'], event_prices[0]['min'] ]], 
+			event_profile=pd.DataFrame([[event_name, event_venue, event_city, event_start_date, event_sale_start, event_lowest_price ]], 
 							columns=['attraction_name', 'venue', 'city', 'event_date', 'sale_start_date', 'lowest_face_val_price'])			
 			
 		except KeyError as No_Price_Data:
 			
 			print('No Price Data Available')
 			
-			event_profile=pd.DataFrame([[event_name, event_venue, event_city, event_dates['start']['localDate'], event_sales['public']['startDateTime'], '' ]], 
+			event_profile=pd.DataFrame([[event_name, event_venue, event_city, event_start_date, event_sale_start, '' ]], 
 						columns=['attraction_name', 'venue', 'city', 'event_date', 'sale_start_date', 'lowest_face_val_price'])			
 
 			

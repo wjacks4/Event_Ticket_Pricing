@@ -76,10 +76,10 @@ def EventBrite_Artist_Search(df):
 		for event in events:
 		
 			try:
-				name = event['name']
+				name = event['name']['text']
 				id = event['id']
-				start = event['start']
-				end = event['end']
+				start = event['start']['utc']
+				end = event['end']['utc']
 				capacity = event['capacity']
 				listed = event['listed']
 				shareable = event['shareable']
@@ -91,11 +91,10 @@ def EventBrite_Artist_Search(df):
 				minimum_price = event['ticket_availability']['minimum_ticket_price']['major_value']
 				maximum_price = event['ticket_availability']['maximum_ticket_price']['major_value']
 				sold_out_indicator = event['ticket_availability']['is_sold_out']
-				start_date_utc = event['ticket_availability']['start_sales_date']
 				available_elsewhere = event['is_externally_ticketed']
 			
-				event_profile=pd.DataFrame([[name, id, start, end, capacity, listed, shareable, venue_id, venue_state, venue_city, minimum_price, maximum_price, sold_out_indicator, start_date_utc, available_elsewhere]], 
-					columns=['event_name', 'event_id', 'event_start', 'event_end', 'event_capacity', 'listed', 'shareable', 'venue_id', 'venue_state', 'venue_city', 'minimum_price', 'maximum_price', 'sold_out_indicator', 'start_date_utc', 'available_elsewhere'])	
+				event_profile=pd.DataFrame([[name, id, start, end, capacity, listed, shareable, venue_id, venue_state, venue_city, minimum_price, maximum_price, sold_out_indicator, available_elsewhere]], 
+					columns=['event_name', 'event_id', 'event_start', 'event_end', 'event_capacity', 'listed', 'shareable', 'venue_id', 'venue_state', 'venue_city', 'minimum_price', 'maximum_price', 'sold_out_indicator', 'available_elsewhere'])	
 				
 				event_df = event_df.append(event_profile)
 					
@@ -109,6 +108,8 @@ def EventBrite_Artist_Search(df):
 			
 		
 		print(event_df)
+		
+		event_df.to_csv('C:/Users/whjac/Desktop/Ticket Flipping/Event_Ticket_Pricing/Data/EventBrite_Sample.csv', index = False, encoding = 'utf-8')
 		
 		
 
