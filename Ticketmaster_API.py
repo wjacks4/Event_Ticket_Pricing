@@ -12,6 +12,8 @@ import pandas as pd
 import unidecode
 from unidecode import unidecode
 
+import MySQLdb
+
 test_db = pd.read_csv("C:/Users/whjac/Desktop/Ticket Flipping/Event_Ticket_Pricing/Data/test.csv")
 
 #print(list(test_db.columns.values))
@@ -121,7 +123,21 @@ def EVENT_DETAILS():
 			print(json_Dat['priceRanges'][0]['min'])
 			
 			event_profile=pd.DataFrame([[event_name, event_venue, event_city, event_start_date, event_sale_start, event_lowest_price ]], 
-							columns=['attraction_name', 'venue', 'city', 'event_date', 'sale_start_date', 'lowest_face_val_price'])			
+							columns=['attraction_name', 'venue', 'city', 'event_date', 'sale_start_date', 'lowest_face_val_price'])	
+
+
+
+			TestQL = "INSERT INTO TEST_Table(event_name, event_venue, city, event_date, sale_start, lowest_price) VALUES ('%s', '%s', '%s', '%s', '%s', '%s');" %(event_name, event_venue, event_city, event_start_date, event_sale_start, event_lowest_price)
+
+			print(TestQL)
+
+			connection=MySQLdb.connect('ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', 'tickets_user', 'tickets_pass', 'tickets_db')
+			cursor=connection.cursor()
+
+			cursor.execute(TestQL)
+			#data=cursor.fetchall()
+			connection.commit()	
+							
 			
 		except KeyError as No_Price_Data:
 			
