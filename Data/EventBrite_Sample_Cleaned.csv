@@ -1,0 +1,5 @@
+event_name,event_id,event_start,event_end,event_capacity,listed,shareable,venue_id,venue_state,venue_city,minimum_price,maximum_price,sold_out_indicator,available_elsewhere,Real artist
+Da Baby @ Mohawk,56678924188,2019-05-01T00:00:00Z,2019-05-01T11:00:00Z,,True,False,18828404,TX,Austin,20.00,70.00,False,False,True
+Da Baby Live!!!!,60782633493,2019-05-31T00:00:00Z,2019-05-31T05:00:00Z,,True,True,31752790,AR,little rock,40.00,1400.00,False,False,True
+Da Baby Live in San Antonio,60754907564,2019-06-07T00:00:00Z,2019-06-07T05:00:00Z,,True,True,31691375,TX,San Antonio,35.00,60.00,False,False,True
+Da Baby! Memorial Day Weekend 2k19 at Babylon Miami!,60565728725,2019-05-27T00:00:11Z,2019-05-27T10:00:11Z,,True,True,27916322,FL,Miami,100.00,100.00,False,False,True

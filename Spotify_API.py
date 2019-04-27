@@ -97,14 +97,11 @@ def Playlist_Artists(user_in, ID_in):
 				#artist_encode = artist.encode('utf-8')
 				#artist_decode = unidecode(str(artist_encode, encoding = "utf-8"))	
 				
-				
 				artist_name = unidecode(str( (artist['name'].encode('utf-8')), encoding="utf-8"))
 				artist_array.append(artist_name)
 				
 		return(artist_array)
 				
-	
-	
 playlist_IDs=pd.DataFrame()
 
 
@@ -123,8 +120,10 @@ for playlist in Spotify_Playlist_list.iterrows():
 	playlist_IDs = playlist_IDs.append(each_Playlist)
 
 
+test = playlist_IDs.head(3)
 
 for playlist_ID in playlist_IDs.iterrows():
+#for playlist_ID in test.iterrows(): 
 	
 	each_Name = ((playlist_ID[1]['playlist_Name']))
 	each_genre = ((playlist_ID[1]['genre']))
@@ -133,11 +132,28 @@ for playlist_ID in playlist_IDs.iterrows():
 
 	Artists_list = Playlist_Artists(each_User, each_ID)
 	
+	for artist in Artists_list:
+	
+		print(artist)
+		
+		TestQL = "INSERT INTO ARTISTS(artist_name, artist_genre, playlist) VALUES ('%s', '%s', '%s');" %(artist, each_genre, each_Name)
+
+		print(TestQL)
+
+		connection=MySQLdb.connect('ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', 'tickets_user', 'tickets_pass', 'tickets_db')
+		cursor=connection.cursor()
+
+		cursor.execute(TestQL)
+		#data=cursor.fetchall()
+		connection.commit()			
+		
+		
+	
 	print(each_Name)
 	print(each_genre)
 	print(each_ID)
 	print(Artists_list)
-	
+
 	
 
 

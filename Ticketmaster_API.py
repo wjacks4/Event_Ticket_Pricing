@@ -47,7 +47,7 @@ def EVENT_IDs (df):
 			
 			raw_Dat = urllib.request.urlopen(access_string)			
 			encoded_Dat = raw_Dat.read().decode('utf-8', 'ignore')			
-			json_Dat = json.loads(encoded_Dat)			
+			json_Dat = json.loads(encoded_Dat)
 			event_Dat = json_Dat['_embedded']['events']		
 			
 			for event in event_Dat:
@@ -147,15 +147,6 @@ def EVENT_DETAILS():
 						columns=['attraction_name', 'venue', 'city', 'event_date', 'sale_start_date', 'lowest_face_val_price'])			
 
 			
-
-		#for item in event_venue:
-		#	city = item['city']['name']
-		#	venue = item['name']
-		
-			#print(city)
-			#print(venue)
-			
-		#	each_event = pd.DataFrame([[event_name, venue, city]], columns=['attraction_name', 'venue', 'city'])
 			
 		event_df = event_df.append(event_profile)
 			
