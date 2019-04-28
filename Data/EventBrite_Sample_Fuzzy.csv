@@ -1,16 +1,15 @@
-event_name,event_id,event_start,event_end,event_capacity,listed,shareable,venue_id,venue_state,venue_city,minimum_price,maximum_price,sold_out_indicator,available_elsewhere,Real artist
-Da Baby @ Mohawk,56678924188,2019-05-01T00:00:00Z,2019-05-01T11:00:00Z,,True,False,18828404,TX,Austin,20.00,70.00,False,False,True
-DaBaby at Republic NOLA,59925365381,2019-05-20T03:00:00Z,2019-05-20T07:00:00Z,,True,False,29250379,LA,New Orleans,40.00,150.00,False,False,False
-Da baby at kandy bar,60836427392,2019-06-02T01:30:00Z,2019-06-02T05:30:00Z,,True,True,27151322,NC,Charlotte,30.00,60.00,False,False,False
-Da Baby Live!!!!,60782633493,2019-05-31T00:00:00Z,2019-05-31T05:00:00Z,,True,True,31752790,AR,little rock,40.00,1400.00,False,False,True
-#MMCTA  WITH DA BABY PERFORMING LIVE,60105198266,2019-04-28T02:00:00Z,2019-04-28T08:00:00Z,,True,False,31274396,SC,Marion ,15.00,600.00,False,False,False
-"DaBaby LIVE in MORGANTOWN, WV!!!",60342458919,2019-05-16T01:00:00Z,2019-05-16T06:00:00Z,,True,True,30660146,WV,Morgantown,30.00,700.00,False,False,False
-Grad Bash Featuring DaBaby,60825439527,2019-05-04T02:00:28Z,2019-05-04T07:00:28Z,,True,True,31750698,FL,Tampa,20.00,45.00,False,False,False
-Da Baby Live in San Antonio,60754907564,2019-06-07T00:00:00Z,2019-06-07T05:00:00Z,,True,True,31691375,TX,San Antonio,35.00,60.00,False,False,True
-"DaBaby's Official ""Baby on Baby"" After Party & Performance",60843816493,2019-05-13T02:00:00Z,2019-05-13T07:00:00Z,,True,False,31728190,NC,Smithfield,50.00,100.00,False,False,False
-DaBaby / Wednesday May 1st / Spire,60944922905,2019-05-02T03:00:00Z,2019-05-02T07:00:00Z,,True,True,29480213,TX,Houston,20.00,20.00,False,False,False
-DaBaby Performing Live 5.4.19 Baby On Baby tour TALLAHASSEE graduation Week,59669760861,2019-05-05T01:00:00Z,2019-05-05T07:00:00Z,,True,True,24296077,FL,Tallahassee,30.00,50.00,False,False,False
-DA BABY PERFORMING LIVE AT WHISKY RIVER! BLACK BIKEWEEK! ,59606044283,2019-05-26T02:00:00Z,2019-05-26T06:00:00Z,,True,True,31217459,SC,North Myrtle Beach,0.00,50.00,False,False,False
-Da Baby! Memorial Day Weekend 2k19 at Babylon Miami!,60565728725,2019-05-27T00:00:11Z,2019-05-27T10:00:11Z,,True,True,27916322,FL,Miami,100.00,100.00,False,False,True
-"DaBaby w/ Prime Society, Stunna 4 Vegas, Blacc Zacc  ",60799921201,2019-06-09T02:00:00Z,2019-06-09T05:30:00Z,,True,True,31708807,AZ,Phoenix,25.00,25.00,False,False,False
-DA BABY PERFORMING LIVE IN CONCERT SUNDAY MAY 26TH @ BABYLON MIAMI MEMORIAL DAY WKND,60800954291,2019-05-27T00:00:00Z,2019-05-27T10:00:00Z,,True,True,31660515,FL,Miami,100.00,100.00,False,False,False
+event_name,event_id,event_start,event_end,event_capacity,listed,shareable,venue_id,venue_state,venue_city,minimum_price,maximum_price,sold_out_indicator,available_elsewhere
+Da Baby @ Mohawk,56678924188,2019-05-01T00:00:00Z,2019-05-01T11:00:00Z,,True,False,18828404,TX,Austin,20.00,70.00,False,False
+DaBaby at Republic NOLA,59925365381,2019-05-20T03:00:00Z,2019-05-20T07:00:00Z,,True,False,29250379,LA,New Orleans,40.00,150.00,False,False
+Da baby at kandy bar,60836427392,2019-06-02T01:30:00Z,2019-06-02T05:30:00Z,,True,True,27151322,NC,Charlotte,30.00,60.00,False,False
+Da Baby Live!!!!,60782633493,2019-05-31T00:00:00Z,2019-05-31T05:00:00Z,,True,True,31752790,AR,little rock,40.00,1400.00,False,False
+"DaBaby LIVE in MORGANTOWN, WV!!!",60342458919,2019-05-16T01:00:00Z,2019-05-16T06:00:00Z,,True,True,30660146,WV,Morgantown,30.00,700.00,False,False
+Grad Bash Featuring DaBaby,60825439527,2019-05-04T02:00:28Z,2019-05-04T07:00:28Z,,True,True,31782832,FL,Tampa,20.00,45.00,False,False
+Da Baby Live in San Antonio,60754907564,2019-06-07T00:00:00Z,2019-06-07T05:00:00Z,,True,True,31691375,TX,San Antonio,35.00,60.00,False,False
+"DaBaby's Official ""Baby on Baby"" After Party & Performance",60843816493,2019-05-13T02:00:00Z,2019-05-13T07:00:00Z,,True,False,31728190,NC,Smithfield,50.00,100.00,False,False
+DaBaby / Wednesday May 1st / Spire,60944922905,2019-05-02T03:00:00Z,2019-05-02T07:00:00Z,,True,True,29480213,TX,Houston,20.00,20.00,False,False
+DaBaby Performing Live 5.4.19 Baby On Baby tour TALLAHASSEE graduation Week,59669760861,2019-05-05T01:00:00Z,2019-05-05T07:00:00Z,,True,True,24296077,FL,Tallahassee,30.00,50.00,False,False
+DA BABY PERFORMING LIVE AT WHISKY RIVER! BLACK BIKEWEEK! ,59606044283,2019-05-26T02:00:00Z,2019-05-26T06:00:00Z,,True,True,31217459,SC,North Myrtle Beach,0.00,50.00,False,False
+Da Baby! Memorial Day Weekend 2k19 at Babylon Miami!,60565728725,2019-05-27T00:00:11Z,2019-05-27T10:00:11Z,,True,True,27916322,FL,Miami,100.00,100.00,False,False
+"DaBaby w/ Prime Society, Stunna 4 Vegas, Blacc Zacc  ",60799921201,2019-06-09T02:00:00Z,2019-06-09T05:30:00Z,,True,True,31708807,AZ,Phoenix,25.00,25.00,False,False
+DA BABY PERFORMING LIVE IN CONCERT SUNDAY MAY 26TH @ BABYLON MIAMI MEMORIAL DAY WKND,60800954291,2019-05-27T00:00:00Z,2019-05-27T10:00:00Z,,True,True,31660515,FL,Miami,100.00,100.00,False,False

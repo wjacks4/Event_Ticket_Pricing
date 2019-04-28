@@ -29,6 +29,7 @@ import base64
 import numpy as np
 import fuzzywuzzy
 from fuzzywuzzy import fuzz
+import MySQLdb
 
 
 API_key = "QBBZEWV5XWAAFECR3D"
@@ -116,7 +117,7 @@ def EventBrite_Artist_Search(df):
 		event_df = pd.DataFrame()
 			
 		attr_list = ['name', 'id', 'start', 'end', 'capacity', 'listed', 'shareable', 'venue_id']
-			
+		
 		for event in events:
 		
 			try:
@@ -131,7 +132,6 @@ def EventBrite_Artist_Search(df):
 			
 				#Distance = levenshtein_ratio_and_distance(Spotify_name, EventBrite_name)
 				#print(Distance)
-				
 				#Ratio = levenshtein_ratio_and_distance(Spotify_name, EventBrite_name,ratio_calc = True)
 				#print(Ratio)
 				
@@ -166,6 +166,21 @@ def EventBrite_Artist_Search(df):
 					
 					event_df = event_df.append(event_profile)
 					
+					TestQL = "INSERT INTO EVENTBRITE_Test(event_name, event_id, event_start, event_end, event_capacity, event_listed, event_shareable, venue_id, venue_state, venue_city, minimum_price, maximum_price, sold_out_indicator, available_elsewhere) \
+								VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s');" %(name, id, start, end, capacity, listed, shareable, venue_id, venue_state, venue_city, minimum_price, maximum_price, sold_out_indicator, available_elsewhere)
+
+					print(TestQL)
+
+					connection=MySQLdb.connect('ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', 'tickets_user', 'tickets_pass', 'tickets_db')
+					cursor=connection.cursor()
+
+					cursor.execute(TestQL)
+					#data=cursor.fetchall()
+					connection.commit()				
+					
+					
+					
+					
 			except TypeError as no_data:
 			
 				print ('One of the fields was missing')
@@ -180,10 +195,17 @@ def EventBrite_Artist_Search(df):
 		
 		event_df.to_csv('C:/Users/whjac/Desktop/Ticket Flipping/Event_Ticket_Pricing/Data/EventBrite_Sample_Fuzzy.csv', index = False, encoding = 'utf-8')
 		
-		event_df_cleaned.to_csv('C:/Users/whjac/Desktop/Ticket Flipping/Event_Ticket_Pricing/Data/EventBrite_Sample_Cleaned.csv', index = False, encoding = 'utf-8')
+		
+		#------------------------------------------#
+		#----------EXPORT TO MYSQL DB--------------#
+		#------------------------------------------#
+		
 		
 		
 
+		
+		
+		
 		
 		
 		

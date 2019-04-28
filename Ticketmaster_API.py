@@ -51,6 +51,8 @@ base_url = ('https://app.ticketmaster.com/discovery/v2/events.json?&apikey=OrCBY
 
 
 Test = Data_Fetch().head(3)
+
+print(Test)
 	
 def EVENT_IDs (df):
 
@@ -80,8 +82,8 @@ def EVENT_IDs (df):
 			for event in event_Dat:
 				name = event['name']
 				id = event['id']
-				print((name).encode('utf8'))
-				print((id).encode('utf8'))
+				#print((name).encode('utf8'))
+				#print((id).encode('utf8'))
 				
 				
 				each_event_ID = pd.DataFrame([[name, id]], columns=['attraction_name', 'ID'])
@@ -90,7 +92,7 @@ def EVENT_IDs (df):
 			
 			#print(each_event)
 				
-			time.sleep(1)
+			time.sleep(5)
 		
 		except KeyError as Oshit:
 		
@@ -212,7 +214,7 @@ def EVENT_DETAILS():
 			
 		event_df = event_df.append(event_profile)
 			
-		time.sleep(.25)
+		time.sleep(5)
 			
 	event_df.to_csv('C:/Users/whjac/Desktop/Ticket Flipping/Event_Ticket_Pricing/Data/Ticketmaster_event_list.csv', index=False)
 	
