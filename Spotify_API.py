@@ -16,6 +16,7 @@ from spotipy.oauth2 import SpotifyClientCredentials
 from spotipy.client import Spotify
 import requests
 import urllib
+import MySQLdb
 from urllib import parse
 
 #---------------------------------#
@@ -26,7 +27,7 @@ Spotify_client_ID = 'ab3b70083f5f469188f8e49b79d5eadb'
 
 Spotify_client_secret = '6ecf81925e2740c9adecaad28685457a'
 
-Spotify_Playlist_list = pd.read_csv('C:/Users/whjac/Desktop/Ticket Flipping/Event_Ticket_Pricing/Data/Spotify Chart Names.csv')
+Spotify_Playlist_list = pd.read_csv('C:/Users/whjac/Desktop/Ticket Flipping/Event_Ticket_Pricing/Data/Spotify Chart Names2.csv')
 
 sample = Spotify_Playlist_list.head(2)
 
@@ -90,19 +91,27 @@ def Playlist_Artists(user_in, ID_in):
 		
 		for song in song_list:
 			
-			artists = song['track']['artists']
+			try:
 			
-			for artist in artists:
+				artists = song['track']['artists']
 				
-				#artist_encode = artist.encode('utf-8')
-				#artist_decode = unidecode(str(artist_encode, encoding = "utf-8"))	
-				
-				artist_name = unidecode(str( (artist['name'].encode('utf-8')), encoding="utf-8"))
+				for artist in artists:
+					
+					#artist_encode = artist.encode('utf-8')
+					#artist_decode = unidecode(str(artist_encode, encoding = "utf-8"))	
+					
+					artist_name = unidecode(str( (artist['name'].encode('utf-8')), encoding="utf-8"))
+					artist_array.append(artist_name)
+			
+			except TypeError as Err:
+			
+				artist_name = ' ' 
 				artist_array.append(artist_name)
 				
 		return(artist_array)
 				
 playlist_IDs=pd.DataFrame()
+
 
 
 for playlist in Spotify_Playlist_list.iterrows():
@@ -122,6 +131,8 @@ for playlist in Spotify_Playlist_list.iterrows():
 
 test = playlist_IDs.head(3)
 
+
+
 for playlist_ID in playlist_IDs.iterrows():
 #for playlist_ID in test.iterrows(): 
 	
@@ -136,23 +147,35 @@ for playlist_ID in playlist_IDs.iterrows():
 	
 		print(artist)
 		
-		TestQL = "INSERT INTO ARTISTS(artist_name, artist_genre, playlist) VALUES ('%s', '%s', '%s');" %(artist, each_genre, each_Name)
+		artist = artist.replace('"', ' ')
+		
+		TestQL = 'INSERT INTO Artists2(artist, genre, playlist) VALUES ("%s", "%s", "%s");' %(artist, each_genre, each_Name)
 
 		print(TestQL)
-
-		connection=MySQLdb.connect('ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', 'tickets_user', 'tickets_pass', 'tickets_db')
-		cursor=connection.cursor()
-
-		cursor.execute(TestQL)
-		#data=cursor.fetchall()
-		connection.commit()			
 		
+		try:
+
+			connection=MySQLdb.connect('ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', 'tickets_user', 'tickets_pass', 'tickets_db')
+			cursor=connection.cursor()
+
+			cursor.execute(TestQL)
+			#data=cursor.fetchall()
+			connection.commit()			
+		
+		except OperationalError as Err:
+		
+			print('SSL Connection Error ??')
 		
 	
 	print(each_Name)
 	print(each_genre)
 	print(each_ID)
 	print(Artists_list)
+	
+	
+	
+	
+
 
 	
 

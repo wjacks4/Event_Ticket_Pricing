@@ -11,20 +11,26 @@ import urllib.request
 import pandas as pd
 import unidecode
 from unidecode import unidecode
-
 import MySQLdb
 
-test_db = pd.read_csv("C:/Users/whjac/Desktop/Ticket Flipping/Event_Ticket_Pricing/Data/test.csv")
+def Data_Fetch():
 
-#print(list(test_db.columns.values))
+	test_db = pd.read_csv("C:/Users/whjac/Desktop/Ticket Flipping/Event_Ticket_Pricing/Data/test.csv")
 
-#print(test_db['Artist'])
+	Fetch_QL = 'SELECT * FROM ARTISTS_ONLY;'
+
+	connection=MySQLdb.connect('ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', 'tickets_user', 'tickets_pass', 'tickets_db')
+	cursor=connection.cursor()
+
+	cursor.execute(TestQL)
+	Artists_List = cursor.fetchall()
+
+Data_Fetch()
+
+print(Artists_List)
 
 base_url = ('https://app.ticketmaster.com/discovery/v2/events.json?&apikey=OrCBYA46Xdvtl7RFfU88egw4L8HDPRW3&size=10&keyword=')
 
-sample=test_db.head(1)
-
-#print(sample)
 
 
 	
@@ -158,7 +164,7 @@ def EVENT_DETAILS():
 	
 	return event_df
 						
-EVENT_DETAILS()
+#EVENT_DETAILS()
 
 
 	
