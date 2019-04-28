@@ -27,7 +27,7 @@ Spotify_client_ID = 'ab3b70083f5f469188f8e49b79d5eadb'
 
 Spotify_client_secret = '6ecf81925e2740c9adecaad28685457a'
 
-Spotify_Playlist_list = pd.read_csv('C:/Users/whjac/Desktop/Ticket Flipping/Event_Ticket_Pricing/Data/Spotify Chart Names.csv')
+Spotify_Playlist_list = pd.read_csv('C:/Users/whjac/Desktop/Ticket Flipping/Event_Ticket_Pricing/Data/Spotify Chart Names2.csv')
 
 sample = Spotify_Playlist_list.head(1)
 
@@ -222,7 +222,7 @@ for playlist_ID in playlist_IDs.iterrows():
 			#data=cursor.fetchall()
 			connection.commit()			
 		
-		except OperationalError as Err:
+		except _mysql_exceptions.OperationalError as Err:
 		
 			print('SSL Connection Error ??')
 	

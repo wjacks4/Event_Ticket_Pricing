@@ -26,11 +26,12 @@ def Data_Fetch():
 	cursor.execute(Fetch_QL)
 	Artists_List = cursor.fetchall()
 	
-	Artists_DF = pd.read_sql('SELECT * FROM ARTISTS_ONLY', con = connection)
+	Artists_DF = pd.read_sql('SELECT * FROM ARTISTS_ONLY_EXPANDED', con = connection)
 	
-	print(Artists_DF)
+	#print(Artists_DF)
+	#Artists_DF.to_csv('C:/Users/whjac/Desktop/Ticket Flipping/Event_Ticket_Pricing/Data/Arist_Data.csv', index = False, encoding = 'utf-8')
+		
 	return Artists_DF
-	
 	
 
 Data_Fetch()
@@ -38,10 +39,14 @@ Data_Fetch()
 
 base_url = ('https://app.ticketmaster.com/discovery/v2/events.json?&apikey=OrCBYA46Xdvtl7RFfU88egw4L8HDPRW3&size=10&keyword=')
 
+Test = Data_Fetch().head(3)
 	
 def EVENT_IDs (df):
 
-	artists = df['Artist']
+
+	artists = Test['artist']
+	#artists = df['Artist']
+	#artists = Artists_DF['artist']
 
 	event_ID_df = pd.DataFrame()
 	
@@ -74,7 +79,7 @@ def EVENT_IDs (df):
 			
 			#print(each_event)
 				
-			time.sleep(.25)
+			time.sleep(.5)
 		
 		except KeyError as Oshit:
 		
@@ -86,7 +91,7 @@ def EVENT_IDs (df):
 	return event_ID_df
 			
 
-#EVENT_IDs(sample)
+EVENT_IDs(Test)
 
 sample_event_url = ('https://app.ticketmaster.com/discovery/v2/events/1AKZA_YGkd7zQGw.json?apikey=OrCBYA46Xdvtl7RFfU88egw4L8HDPRW3')
 
@@ -102,7 +107,7 @@ def EVENT_DETAILS():
 	
 	api_key = ('.json?apikey=OrCBYA46Xdvtl7RFfU88egw4L8HDPRW3')
 	
-	IDs = EVENT_IDs(sample)['ID']
+	IDs = EVENT_IDs(Test)['ID']
 	
 	event_df = pd.DataFrame()
 	
@@ -118,15 +123,50 @@ def EVENT_DETAILS():
 		
 		encoded_Dat = raw_Data.read().decode('utf-8', 'ignore')			
 		json_Dat = json.loads(encoded_Dat)
-		event_venue = json_Dat['_embedded']['venues'][0]['name']
-		event_city = json_Dat['_embedded']['venues'][0]['city']['name']
-		event_dates= json_Dat['dates']
-		event_sales = json_Dat['sales']
-		event_name = json_Dat['name']
-		event_start_date = json_Dat['dates']['start']['localDate']
-		event_sale_start = json_Dat['sales']['public']['startDateTime']
-
 		
+		
+		#---------------------------------------------------------------#
+		#-----------HANDLE EXCEPTIONS FOR MISSING VALUES----------------#
+		#---------------------------------------------------------------#
+		try: 
+			event_venue = json_Dat['_embedded']['venues'][0]['name']
+		except KeyError as noVenue:
+			event_venue=' '
+			
+		try:
+			event_city = json_Dat['_embedded']['venues'][0]['city']['name']
+		except KeyError as noCity:
+			event_city = ' '
+			
+		try:
+			event_dates= json_Dat['dates']
+		except KeyError as noDate:
+			event_dates = ''
+			
+		try:
+			event_sales = json_Dat['sales']
+		except KeyError as noSales:
+			event_sales = ''
+			
+		try:
+			event_name = json_Dat['name']
+		except KeyError as noName:
+			event_name = ''
+		
+		try:
+			event_start_date = json_Dat['dates']['start']['localDate']
+		
+		except KeyError as noStartDate:
+			event_start_date = ' '
+		
+		
+		try: 
+			event_sale_start = json_Dat['sales']['public']['startDateTime']
+		except KeyError as noSaleStart:
+			event_sale_start = ' '
+			
+
+
 		try: 
 		
 			event_lowest_price = json_Dat['priceRanges'][0]['min']
@@ -169,7 +209,7 @@ def EVENT_DETAILS():
 	
 	return event_df
 						
-#EVENT_DETAILS()
+EVENT_DETAILS()
 
 
 	
