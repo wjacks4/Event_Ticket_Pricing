@@ -94,42 +94,75 @@ def levenshtein_ratio_and_distance(s, t, ratio_calc = False):
 
 def EventBrite_Artist_Search(df):
 
+	#---------SELECT A SMALL SUBSET OF THE ARTIST DATAFRAME----------#
 	sample = df.head(3)
-	
 	artists = sample['Artist']
 	
+	#-----------SELECT ARTISTS COLUMN FROM ARTISTS DATAFRAME---------#
+	#artists = df['Artist']
 	
 	
+	#---------------------------------------------------------#
+	#--------------------LOOP THRU ARTISTS--------------------#
+	#---------------------------------------------------------#
 	for artist in artists:
 		
-		artist_encode = artist.replace(" ", "%20")
-		artist_url = (base_string + "expand=ticket_availability,external_ticketing,venue&" + "q=" + artist_encode)
 		
+		#------------------------------------------------------#
+		#---------ENCODE ARTIST NAMES IN HTML SYNTAX-----------#
+		#------------------------------------------------------#
+		artist_encode = artist.replace(" ", "%20")
+		
+		
+		#------------------------------------------------------#
+		#---------BUILD THE URL TO REQUEST DATA FROM-----------#
+		#------------------------------------------------------#
+		artist_url = (base_string + "expand=ticket_availability,external_ticketing,venue&" + "q=" + artist_encode)
 		print(artist_url)
+		
+		
+		#---------------------------------------------------------------#
+		#---------GET RAW RESPONSE FROM URL, DECODE IT TO JSON----------#
+		#---------------------------------------------------------------#
 		rawdat = urllib.request.urlopen(artist_url)
 		encoded_dat = rawdat.read().decode('utf-8', errors='ignore')
-		
 		print(rawdat)
-		
 		json_dat = json.loads(encoded_dat)
+		
+		
+		#------------------------------------------------------------------------#
+		#---------------BEGIN BUILDING EVENTS DATAFRAME FROM JSON----------------#
+		#-----CREATE BLANK DATAFRAME FOR APPENDING, ISOLATE EVENTS FROM JSON-----#
+		#------------------------------------------------------------------------#
+		event_df = pd.DataFrame()
 		events = json_dat['events']
 		
-		event_df = pd.DataFrame()
-			
-		attr_list = ['name', 'id', 'start', 'end', 'capacity', 'listed', 'shareable', 'venue_id']
 		
+		#-----------------------------------------------------------#
+		#-----------LOOP THROUGH EVENTS IN EVENT LIST---------------#
+		#-----------------------------------------------------------#
 		for event in events:
 		
+		
+			#----------------------------------------------------------------------------------------#
+			#----------TRY TO EXTRACT DATA FROM 'EVENTS' OBJECT IN JSON...EXCEPT WHEN NO DATA--------#
+			#----------------------------------------------------------------------------------------#
+			
 			try:
-				name = event['name']['text']
+			
+				#----------------------------------------------------------------------------#
+				#--------FIRST, EXTRACT EVENT NAME AND ELIMINATE SQL ESCAPE CHARACTERS-------#
+				#----------------------------------------------------------------------------#
+				name = (event['name']['text']).replace('"', '')
 				
-				#-----FUZZY MATCHING TESTING----#
 				
+				#-------------------------------------------------------------------------------------------------#
+				#------AVOID PULLING BACK TOO MANY EVENTS BY FUZZY MATCHING SPOTIFY NAME TO EVENTBRITE NAMES------#
+				#-------------------------------------------------------------------------------------------------#
 				Spotify_name = artist
 				EventBrite_name = name
 				
 				#-----------TEST OUT FUZZY LEVENSHEN FUNCTION-----------#
-			
 				#Distance = levenshtein_ratio_and_distance(Spotify_name, EventBrite_name)
 				#print(Distance)
 				#Ratio = levenshtein_ratio_and_distance(Spotify_name, EventBrite_name,ratio_calc = True)
@@ -137,14 +170,19 @@ def EventBrite_Artist_Search(df):
 				
 
 				#----------TEST OUT FUZZYWUZZY FUNCTION-----------------#
-				
 				fuzz_partial = fuzz.partial_ratio(Spotify_name.lower(), EventBrite_name.lower())
 				print(fuzz_partial)
+
+				
+				#----------------------------------------------------------------------------------------#
+				#----------ONLY CONTINUE EXTRACTING EVENT DATA IF FUZZY PARTIAL SCORE > .75...IDK--------#
+				#----------------------------------------------------------------------------------------#
 				
 				if fuzz_partial > 75:
-				
-					print('Partial Fuzzy score is greater than 75!!')
-				
+	
+					#-----------------------------------------------------#
+					#-----------INDIVIDUAL VARIABLE EXTRACTION------------#
+					#-----------------------------------------------------#
 					id = event['id']
 					start = event['start']['utc']
 					end = event['end']['utc']
@@ -152,7 +190,7 @@ def EventBrite_Artist_Search(df):
 					listed = event['listed']
 					shareable = event['shareable']
 					venue_id = event['venue_id']
-					
+		
 					venue_state = event['venue']['address']['region']
 					venue_city = event['venue']['address']['city']
 					
@@ -161,26 +199,44 @@ def EventBrite_Artist_Search(df):
 					sold_out_indicator = event['ticket_availability']['is_sold_out']
 					available_elsewhere = event['is_externally_ticketed']
 				
+				
+					#------------------------------------------------------------#
+					#-------CREATE A TEMPORARY DATAFRAME FOR EACH EVENT----------#
+					#------------------------------------------------------------#
 					event_profile=pd.DataFrame([[name, id, start, end, capacity, listed, shareable, venue_id, venue_state, venue_city, minimum_price, maximum_price, sold_out_indicator, available_elsewhere]], 
 						columns=['event_name', 'event_id', 'event_start', 'event_end', 'event_capacity', 'listed', 'shareable', 'venue_id', 'venue_state', 'venue_city', 'minimum_price', 'maximum_price', 'sold_out_indicator', 'available_elsewhere'])	
 					
-					event_df = event_df.append(event_profile)
 					
-					TestQL = "INSERT INTO EVENTBRITE_Test(event_name, event_id, event_start, event_end, event_capacity, event_listed, event_shareable, venue_id, venue_state, venue_city, minimum_price, maximum_price, sold_out_indicator, available_elsewhere) \
-								VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s');" %(name, id, start, end, capacity, listed, shareable, venue_id, venue_state, venue_city, minimum_price, maximum_price, sold_out_indicator, available_elsewhere)
+					#---------------------------------------------------------------------------------------#
+					#------------SQL TIME - SUBSTITUTE STRINGS INTO SQL QUERY FOR DB SUBMISSION-------------#
+					#---------------------------------------------------------------------------------------#
+					
+					TestQL = 'INSERT INTO EVENTBRITE_Test(event_name, event_id, event_start, event_end, event_capacity, event_listed, event_shareable, venue_id, venue_state, venue_city, minimum_price, maximum_price, sold_out, available_elsewhere) \
+								VALUES ("%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s");' %(name, id, start, end, capacity, listed, shareable, venue_id, venue_state, venue_city, minimum_price, maximum_price, sold_out_indicator, available_elsewhere)
 
 					print(TestQL)
-
+					
+					#--------------------------------------------------------#
+					#----------CONNECT TO DB AND SUBMIT SQL QUERY------------#
+					#--------------------------------------------------------#
 					connection=MySQLdb.connect('ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', 'tickets_user', 'tickets_pass', 'tickets_db')
 					cursor=connection.cursor()
 
 					cursor.execute(TestQL)
 					#data=cursor.fetchall()
 					connection.commit()				
+
 					
 					
+					#----------------------------------------------------------------------------------#
+					#-------APPEND EACH EVENT TO MASTER DATAFRAME...NOT SURE IF I STILL NEED THIS------#
+					#----------------------------------------------------------------------------------#
+					event_df = event_df.append(event_profile)
 					
-					
+			
+			#--------------------------------------------------------------------------------------#
+			#------------SINCE NO DATA SEEMS RARE IN EVENTBITE, JUST SKIP RECORD ENTIRELY----------#
+			#--------------------------------------------------------------------------------------#
 			except TypeError as no_data:
 			
 				print ('One of the fields was missing')
@@ -194,20 +250,10 @@ def EventBrite_Artist_Search(df):
 		#-----------------------------------------#
 		
 		event_df.to_csv('C:/Users/whjac/Desktop/Ticket Flipping/Event_Ticket_Pricing/Data/EventBrite_Sample_Fuzzy.csv', index = False, encoding = 'utf-8')
+			
 		
-		
-		#------------------------------------------#
-		#----------EXPORT TO MYSQL DB--------------#
-		#------------------------------------------#
-		
-		
-		
-
-		
-		
-		
-		
-		
-		
+#---------------------------------------------------#
+#---------------CALL MAIN FUNCTION------------------#	
+#---------------------------------------------------#	
 EventBrite_Artist_Search(test_db)
 

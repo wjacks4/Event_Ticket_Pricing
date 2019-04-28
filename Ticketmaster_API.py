@@ -43,14 +43,13 @@ base_url = ('https://app.ticketmaster.com/discovery/v2/events.json?&apikey=OrCBY
 
 #----------------------CHECK HEADER----------------#
 
-#test_url = ('https://app.ticketmaster.com/discovery/v2/events.json?&apikey=OrCBYA46Xdvtl7RFfU88egw4L8HDPRW3&size=10&keyword=Da+Baby')
-#request = urllib.request.urlopen(test_url).info()
-#print(request)
+test_url = ('https://app.ticketmaster.com/discovery/v2/events.json?&apikey=OrCBYA46Xdvtl7RFfU88egw4L8HDPRW3&size=10&keyword=Da+Baby')
+request = urllib.request.urlopen(test_url).info()
+print(request)
 
 
 
-
-Test = Data_Fetch().head(3)
+Test = Data_Fetch().head(10)
 
 print(Test)
 	
@@ -71,7 +70,7 @@ def EVENT_IDs (df):
 			artist_decode = unidecode(str(artist_encode, encoding = "utf-8"))			
 			artist_keyword = artist_decode.replace(" ", "+")		
 			access_string = (base_url + artist_keyword)
-			#print(access_string)
+			print(access_string)
 			
 			
 			raw_Dat = urllib.request.urlopen(access_string)			
@@ -92,7 +91,7 @@ def EVENT_IDs (df):
 			
 			#print(each_event)
 				
-			time.sleep(5)
+			time.sleep(2)
 		
 		except KeyError as Oshit:
 		
@@ -104,7 +103,7 @@ def EVENT_IDs (df):
 	return event_ID_df
 			
 
-EVENT_IDs(Test)
+#EVENT_IDs(Test)
 
 sample_event_url = ('https://app.ticketmaster.com/discovery/v2/events/1AKZA_YGkd7zQGw.json?apikey=OrCBYA46Xdvtl7RFfU88egw4L8HDPRW3')
 
@@ -191,7 +190,7 @@ def EVENT_DETAILS():
 
 
 
-			TestQL = "INSERT INTO TEST_Table(event_name, event_venue, city, event_date, sale_start, lowest_price) VALUES ('%s', '%s', '%s', '%s', '%s', '%s');" %(event_name, event_venue, event_city, event_start_date, event_sale_start, event_lowest_price)
+			TestQL = 'INSERT INTO TEST_Table(event_name, event_venue, city, event_date, sale_start, lowest_price) VALUES ("%s", "%s", "%s", "%s", "%s", "%s");' %(event_name, event_venue, event_city, event_start_date, event_sale_start, event_lowest_price)
 
 			print(TestQL)
 
@@ -214,7 +213,7 @@ def EVENT_DETAILS():
 			
 		event_df = event_df.append(event_profile)
 			
-		time.sleep(5)
+		time.sleep(2)
 			
 	event_df.to_csv('C:/Users/whjac/Desktop/Ticket Flipping/Event_Ticket_Pricing/Data/Ticketmaster_event_list.csv', index=False)
 	
