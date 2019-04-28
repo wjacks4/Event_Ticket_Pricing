@@ -37,7 +37,18 @@ def Data_Fetch():
 Data_Fetch()
 
 
+
 base_url = ('https://app.ticketmaster.com/discovery/v2/events.json?&apikey=OrCBYA46Xdvtl7RFfU88egw4L8HDPRW3&size=10&keyword=')
+
+
+#----------------------CHECK HEADER----------------#
+
+#test_url = ('https://app.ticketmaster.com/discovery/v2/events.json?&apikey=OrCBYA46Xdvtl7RFfU88egw4L8HDPRW3&size=10&keyword=Da+Baby')
+#request = urllib.request.urlopen(test_url).info()
+#print(request)
+
+
+
 
 Test = Data_Fetch().head(3)
 	
@@ -79,7 +90,7 @@ def EVENT_IDs (df):
 			
 			#print(each_event)
 				
-			time.sleep(.5)
+			time.sleep(1)
 		
 		except KeyError as Oshit:
 		
