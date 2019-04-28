@@ -12,6 +12,7 @@ import pandas as pd
 import unidecode
 from unidecode import unidecode
 import MySQLdb
+import sqlalchemy
 
 def Data_Fetch():
 
@@ -22,16 +23,20 @@ def Data_Fetch():
 	connection=MySQLdb.connect('ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', 'tickets_user', 'tickets_pass', 'tickets_db')
 	cursor=connection.cursor()
 
-	cursor.execute(TestQL)
+	cursor.execute(Fetch_QL)
 	Artists_List = cursor.fetchall()
+	
+	Artists_DF = pd.read_sql('SELECT * FROM ARTISTS_ONLY', con = connection)
+	
+	print(Artists_DF)
+	return Artists_DF
+	
+	
 
 Data_Fetch()
 
-print(Artists_List)
 
 base_url = ('https://app.ticketmaster.com/discovery/v2/events.json?&apikey=OrCBYA46Xdvtl7RFfU88egw4L8HDPRW3&size=10&keyword=')
-
-
 
 	
 def EVENT_IDs (df):

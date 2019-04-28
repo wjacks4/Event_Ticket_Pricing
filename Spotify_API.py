@@ -27,9 +27,9 @@ Spotify_client_ID = 'ab3b70083f5f469188f8e49b79d5eadb'
 
 Spotify_client_secret = '6ecf81925e2740c9adecaad28685457a'
 
-Spotify_Playlist_list = pd.read_csv('C:/Users/whjac/Desktop/Ticket Flipping/Event_Ticket_Pricing/Data/Spotify Chart Names2.csv')
+Spotify_Playlist_list = pd.read_csv('C:/Users/whjac/Desktop/Ticket Flipping/Event_Ticket_Pricing/Data/Spotify Chart Names.csv')
 
-sample = Spotify_Playlist_list.head(2)
+sample = Spotify_Playlist_list.head(1)
 
 #print(Spotify_Playlist_list)
 
@@ -78,6 +78,8 @@ def ID_Gen(name):
 	#print(playlist_User)
 	
 	return playlist_ID, playlist_User
+
+	
 	
 	
 	
@@ -86,7 +88,7 @@ def ID_Gen(name):
 def Playlist_Artists(user_in, ID_in):
 
 		raw_dat = spotify.user_playlist_tracks(user = user_in, playlist_id = ID_in)
-		artist_array= []
+		artist_df= pd.DataFrame()
 		song_list = raw_dat['items']
 		
 		for song in song_list:
@@ -101,20 +103,80 @@ def Playlist_Artists(user_in, ID_in):
 					#artist_decode = unidecode(str(artist_encode, encoding = "utf-8"))	
 					
 					artist_name = unidecode(str( (artist['name'].encode('utf-8')), encoding="utf-8"))
-					artist_array.append(artist_name)
+					artist_ID = str(artist['uri']).replace('spotify:artist:', '')
+					
+					artist_dat = spotify.artist(artist_id = artist_ID)
+					
+					artist_followers = artist_dat['followers']['total']
+					artist_popularity = artist_dat['popularity']
+					
+					artist_array = pd.DataFrame([[artist_name, artist_ID, artist_followers, artist_popularity]], columns =['artist_name', 'artist_ID', 'artist_followers', 'artist_popularity'])
+
+					artist_df = artist_df.append(artist_array)
 			
 			except TypeError as Err:
 			
 				artist_name = ' ' 
-				artist_array.append(artist_name)
-				
-		return(artist_array)
+				artist_ID = ' ' 
+				artist_followers = ' ' 
+				artist_popularity = ' '
+				artist_array = pd.DataFrame([[artist_name, artist_ID, artist_followers, artist_popularity]], columns =['artist_name', 'artist_ID', 'artist_followers', 'artist_popularity'])
+					
+				artist_df = artist_df.append(artist_array)
+			
+		return(artist_df)
 				
 playlist_IDs=pd.DataFrame()
 
 
 
+#-----------THIS IS TEST WORK---------------#
+
+def TEST():
+	for playlist in sample.iterrows():
+
+		title=("'" + (playlist[1]['Playlist Name']) + "'")
+		
+		playlist_Name = (playlist[1]['Playlist Name'])
+		genre=(playlist[1]['Genre'])
+
+		playlist_ID = ID_Gen(title)[0]
+		playlist_User = ID_Gen(title)[1]
+		
+		each_Playlist = pd.DataFrame([[playlist_Name, genre, playlist_ID, playlist_User]], columns=['playlist_Name', 'genre', 'playlist_ID', 'playlist_User'])
+		
+		playlist_IDs = playlist_IDs.append(each_Playlist)
+		
+		
+	for playlist_ID in playlist_IDs.iterrows():
+			
+		each_Name = ((playlist_ID[1]['playlist_Name']))
+		each_genre = ((playlist_ID[1]['genre']))
+		each_ID = ((playlist_ID[1]['playlist_ID']))
+		each_User = ((playlist_ID[1]['playlist_User']))
+
+		Artists_list = Playlist_Artists(each_User, each_ID)
+		
+		for artist in Artists_list:
+		
+			#print(artist)
+			
+			artist = artist.replace('"', ' ')
+		
+
+	
+	
+	
+	
+	
+#-----------TAKE THIS OUT OF FUNCTION TO RETURN TO NORMAL------------#
+
+
+
+
+
 for playlist in Spotify_Playlist_list.iterrows():
+
 
 	title=("'" + (playlist[1]['Playlist Name']) + "'")
 	
@@ -134,24 +196,22 @@ test = playlist_IDs.head(3)
 
 
 for playlist_ID in playlist_IDs.iterrows():
-#for playlist_ID in test.iterrows(): 
 	
 	each_Name = ((playlist_ID[1]['playlist_Name']))
 	each_genre = ((playlist_ID[1]['genre']))
 	each_ID = ((playlist_ID[1]['playlist_ID']))
 	each_User = ((playlist_ID[1]['playlist_User']))
 
-	Artists_list = Playlist_Artists(each_User, each_ID)
+	Artists_df = Playlist_Artists(each_User, each_ID)
 	
-	for artist in Artists_list:
-	
-		print(artist)
+	for artist in Artists_df.iterrows():
 		
-		artist = artist.replace('"', ' ')
+		artist_name = ((artist[1]['artist_name'])).replace('"', ' ')
+		id = ((artist[1]['artist_ID']))
+		followers = ((artist[1]['artist_followers']))
+		popularity = ((artist[1]['artist_popularity']))
 		
-		TestQL = 'INSERT INTO Artists2(artist, genre, playlist) VALUES ("%s", "%s", "%s");' %(artist, each_genre, each_Name)
-
-		print(TestQL)
+		TestQL = 'INSERT INTO Artists_expanded(artist, genre, followers, popularity, playlist, artist_id) VALUES ("%s", "%s", "%s", "%s", "%s", "%s");' %(artist_name, each_genre, followers, popularity, each_Name, id)
 		
 		try:
 
@@ -165,12 +225,6 @@ for playlist_ID in playlist_IDs.iterrows():
 		except OperationalError as Err:
 		
 			print('SSL Connection Error ??')
-		
-	
-	print(each_Name)
-	print(each_genre)
-	print(each_ID)
-	print(Artists_list)
 	
 	
 	
