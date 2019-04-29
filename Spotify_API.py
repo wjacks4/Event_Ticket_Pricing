@@ -24,13 +24,8 @@ from urllib import parse
 #---------------------------------#
 
 Spotify_client_ID = 'ab3b70083f5f469188f8e49b79d5eadb'
-
 Spotify_client_secret = '6ecf81925e2740c9adecaad28685457a'
-
 Spotify_Playlist_list = pd.read_csv('C:/Users/whjac/Desktop/Ticket Flipping/Event_Ticket_Pricing/Data/Spotify Chart Names2.csv')
-
-sample = Spotify_Playlist_list.head(1)
-
 #print(Spotify_Playlist_list)
 
 
@@ -82,49 +77,81 @@ def ID_Gen(name):
 	
 	
 	
-	
-#FUNCTION TO RETURN ARRAY OF ARTISTS FROM A GIVEN PLAYLIST#
-
+#--------------------------------------------------------------------------#
+#--------FUNCTION TO RETURN ARRAY OF ARTISTS FROM A GIVEN PLAYLIST---------#
+#--------------------------------------------------------------------------#
 def Playlist_Artists(user_in, ID_in):
 
-		raw_dat = spotify.user_playlist_tracks(user = user_in, playlist_id = ID_in)
-		artist_df= pd.DataFrame()
-		song_list = raw_dat['items']
+	#------------------------------------------------------------------------------------------#
+	#--------USE SPOTIPY'S SPOTIFY FUNCTION TO GET TRACKS FROM A SUPPLIED USER & ID------------#
+	#------------------------------------------------------------------------------------------#
+	raw_dat = spotify.user_playlist_tracks(user = user_in, playlist_id = ID_in)
+	song_list = raw_dat['items']
+	
+	#--------------------------------------------------#
+	#----CREATE EMPTY DATAFRAME FOR APPENDING LATER----#
+	#--------------------------------------------------#
+	artist_df= pd.DataFrame()
+	
+	
+	#--------------------------------------------------------------#
+	#--------------LOOP THROUGH SONGS IN PLAYLIST------------------#
+	#--------------------------------------------------------------#
+	for song in song_list:
 		
-		for song in song_list:
+		#-------------------------------------------------------------------------------------#
+		#----TRY PULLING ARTIST INFO FOR EVERY SONG IN PLAYLIST, EXCEPT WHEN NO DATA EXISTS---#
+		#-------------------------------------------------------------------------------------#
+		try:
+		
+			#-------------------------------------------#
+			#---GET ARTISTS FROM JSON OBJECT ARTISTS----#
+			#-------------------------------------------#
+			artists = song['track']['artists']
 			
-			try:
 			
-				artists = song['track']['artists']
+			#--------------------------------------------------------------------------------------#
+			#----------PULL DETAILED ARTIST INFO FOR EVERY ARTIST ON EVERY TRACK IN PLAYLIST-------#
+			#--------------------------------------------------------------------------------------#
+			for artist in artists:
 				
-				for artist in artists:
-					
-					#artist_encode = artist.encode('utf-8')
-					#artist_decode = unidecode(str(artist_encode, encoding = "utf-8"))	
-					
-					artist_name = unidecode(str( (artist['name'].encode('utf-8')), encoding="utf-8"))
-					artist_ID = str(artist['uri']).replace('spotify:artist:', '')
-					
-					artist_dat = spotify.artist(artist_id = artist_ID)
-					
-					artist_followers = artist_dat['followers']['total']
-					artist_popularity = artist_dat['popularity']
-					
-					artist_array = pd.DataFrame([[artist_name, artist_ID, artist_followers, artist_popularity]], columns =['artist_name', 'artist_ID', 'artist_followers', 'artist_popularity'])
+				artist_name = unidecode(str( (artist['name'].encode('utf-8')), encoding="utf-8"))
+				artist_ID = str(artist['uri']).replace('spotify:artist:', '')
+	
+				#----------------------------------------------------------------------------------#
+				#------USE SPOTIPY'S ARTIST SEARCH FUNCTION TO PULL POPULARITY INFO ON ARTIST------#
+				#----------------------------------------------------------------------------------#
+				artist_dat = spotify.artist(artist_id = artist_ID)
+				artist_followers = artist_dat['followers']['total']
+				artist_popularity = artist_dat['popularity']
 
-					artist_df = artist_df.append(artist_array)
-			
-			except TypeError as Err:
-			
-				artist_name = ' ' 
-				artist_ID = ' ' 
-				artist_followers = ' ' 
-				artist_popularity = ' '
+				#-------------------------------------------------------------#
+				#-------CREATE A TEMPORARY DATAFRAME FOR EACH ARTIST----------#
+				#-------------------------------------------------------------#
 				artist_array = pd.DataFrame([[artist_name, artist_ID, artist_followers, artist_popularity]], columns =['artist_name', 'artist_ID', 'artist_followers', 'artist_popularity'])
-					
+
+				
+				#---------------------------------------------------#
+				#-------APPEND EACH ARTIST TO MASTER DATAFRAME------#
+				#---------------------------------------------------#
 				artist_df = artist_df.append(artist_array)
-			
-		return(artist_df)
+		
+		
+		
+		#-----------------------------------------------------------------------#
+		#----------JUST ADD A BLANK ROW TO MASTER DF WHEN NO DATA EXISTS--------#
+		#-----------------------------------------------------------------------#
+		except TypeError as Err:
+		
+			artist_name = ' ' 
+			artist_ID = ' ' 
+			artist_followers = ' ' 
+			artist_popularity = ' '
+			artist_array = pd.DataFrame([[artist_name, artist_ID, artist_followers, artist_popularity]], columns =['artist_name', 'artist_ID', 'artist_followers', 'artist_popularity'])
+				
+			artist_df = artist_df.append(artist_array)
+		
+	return(artist_df)
 				
 playlist_IDs=pd.DataFrame()
 
@@ -164,69 +191,74 @@ def TEST():
 			artist = artist.replace('"', ' ')
 		
 
-	
-	
-	
-	
-	
-#-----------TAKE THIS OUT OF FUNCTION TO RETURN TO NORMAL------------#
-
-
-
-
-
-for playlist in Spotify_Playlist_list.iterrows():
-
-
-	title=("'" + (playlist[1]['Playlist Name']) + "'")
-	
-	playlist_Name = (playlist[1]['Playlist Name'])
-	genre=(playlist[1]['Genre'])
-
-	playlist_ID = ID_Gen(title)[0]
-	playlist_User = ID_Gen(title)[1]
-	
-	each_Playlist = pd.DataFrame([[playlist_Name, genre, playlist_ID, playlist_User]], columns=['playlist_Name', 'genre', 'playlist_ID', 'playlist_User'])
-	
-	playlist_IDs = playlist_IDs.append(each_Playlist)
-
-
-test = playlist_IDs.head(3)
-
-
-
-for playlist_ID in playlist_IDs.iterrows():
-	
-	each_Name = ((playlist_ID[1]['playlist_Name']))
-	each_genre = ((playlist_ID[1]['genre']))
-	each_ID = ((playlist_ID[1]['playlist_ID']))
-	each_User = ((playlist_ID[1]['playlist_User']))
-
-	Artists_df = Playlist_Artists(each_User, each_ID)
-	
-	for artist in Artists_df.iterrows():
 		
-		artist_name = ((artist[1]['artist_name'])).replace('"', ' ')
-		id = ((artist[1]['artist_ID']))
-		followers = ((artist[1]['artist_followers']))
-		popularity = ((artist[1]['artist_popularity']))
-		
-		TestQL = 'INSERT INTO Artists_expanded(artist, genre, followers, popularity, playlist, artist_id) VALUES ("%s", "%s", "%s", "%s", "%s", "%s");' %(artist_name, each_genre, followers, popularity, each_Name, id)
-		
-		try:
+#------------------------------------------------------------------------------#
+#-----------FUNCTION THAT CALLS ID GEN F'N, THEN PLAYLIST_ARTISTS F'N----------#
+#-------------THEN STICKS THE RESULT OF THE PLAYLIST ARTIST F'N IN DB----------#
 
-			connection=MySQLdb.connect('ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', 'tickets_user', 'tickets_pass', 'tickets_db')
-			cursor=connection.cursor()
+def Artists_to_DB():
 
-			cursor.execute(TestQL)
-			#data=cursor.fetchall()
-			connection.commit()			
+
+	#-----------------------------------------------------------------------------------#
+	#---------GET PLAYLIST IDS FROM MANUALLY GATHERED SPOTIFY PLAYLIST TABLE------------#
+	#-----------------------------------------------------------------------------------#
+	for playlist in Spotify_Playlist_list.iterrows():
+
+
+		title=("'" + (playlist[1]['Playlist Name']) + "'")
 		
-		except _mysql_exceptions.OperationalError as Err:
+		playlist_Name = (playlist[1]['Playlist Name'])
+		genre=(playlist[1]['Genre'])
+
+		playlist_ID = ID_Gen(title)[0]
+		playlist_User = ID_Gen(title)[1]
 		
-			print('SSL Connection Error ??')
+		each_Playlist = pd.DataFrame([[playlist_Name, genre, playlist_ID, playlist_User]], columns=['playlist_Name', 'genre', 'playlist_ID', 'playlist_User'])
+		
+		playlist_IDs = playlist_IDs.append(each_Playlist)
+
+
+	test = playlist_IDs.head(3)
+
 	
 	
+	#-----------------------------------------------------------------------------------------#
+	#--------------GET DETAILED ARTIST INFO FOR EVERY PLAYLIST WE NOW HAVE IDS FOR------------#
+	#-----------------------------------------------------------------------------------------#
+	for playlist_ID in playlist_IDs.iterrows():
+		
+		each_Name = ((playlist_ID[1]['playlist_Name']))
+		each_genre = ((playlist_ID[1]['genre']))
+		each_ID = ((playlist_ID[1]['playlist_ID']))
+		each_User = ((playlist_ID[1]['playlist_User']))
+
+		Artists_df = Playlist_Artists(each_User, each_ID)
+		
+		for artist in Artists_df.iterrows():
+			
+			artist_name = ((artist[1]['artist_name'])).replace('"', ' ')
+			id = ((artist[1]['artist_ID']))
+			followers = ((artist[1]['artist_followers']))
+			popularity = ((artist[1]['artist_popularity']))
+			
+			
+			
+			TestQL = 'INSERT INTO Artists_expanded(artist, genre, followers, popularity, playlist, artist_id) VALUES ("%s", "%s", "%s", "%s", "%s", "%s");' %(artist_name, each_genre, followers, popularity, each_Name, id)
+			
+			try:
+
+				connection=MySQLdb.connect('ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', 'tickets_user', 'tickets_pass', 'tickets_db')
+				cursor=connection.cursor()
+
+				cursor.execute(TestQL)
+				#data=cursor.fetchall()
+				connection.commit()			
+			
+			except _mysql_exceptions.OperationalError as Err:
+			
+				print('SSL Connection Error ??')
+	
+Artists_to_DB()
 	
 	
 
