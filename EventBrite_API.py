@@ -1,9 +1,14 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Apr 11 15:00:58 2019
-
-@author: bswxj01
-"""
+#-----------------------------------------------------#
+#-----------EVENTBRITE API DATA PULL------------------#
+#-----------------------------------------------------#
+#-----------PURPOSE - FOR EACH ARTIST ON A MAJOR------#
+#---------------------SPOTIFY PLAYLIST, SEARCH FOR----#
+#---------------------THEIR EVENTS ON EVENTBRITE------#
+#---------------------AND INSERT ALL RELEVANT DATA----#
+#---------------------INTO AN AWS RDB TABLE-----------#
+#-----------------------------------------------------#
+#----------LAST UPDATED ON 4/28/2019------------------#
+#-----------------------------------------------------#
 
 import mysql
 from mysql.connector import Error
@@ -32,19 +37,57 @@ from fuzzywuzzy import fuzz
 import MySQLdb
 
 
+#------------------------------------------------------------------#
+#---------------EVENTBRITE API AUTHORIZATION DATA------------------#
+#------------------------------------------------------------------#
 API_key = "QBBZEWV5XWAAFECR3D"
 API_secret = "7NG5DUZEJBCIGLFJWZRTQ3R7SE3UXUDCA4DFD7U3MFC57UQF45"
 OAuth_token = "ZG7IKNHFJFFYSXDN4R5K"
 Anon_OAuth_token = "SWIBI6XDBCO2UP5AOA7Y"
-
 base_string = "https://www.eventbriteapi.com/v3/events/search/?token=ZG7IKNHFJFFYSXDN4R5K&"
 
 
+
+#--------------------------------------------------------------------#
+#-----------------STATIC DATA LOCATION PULL FOR TESTING--------------#
+#--------------------------------------------------------------------#
 test_db = pd.read_csv("C:/Users/whjac/Desktop/Ticket Flipping/Event_Ticket_Pricing/Data/test.csv")
 sample = test_db.head(3)
 
-print(sample)
 
+
+#----------------------------------------------------------------------#
+#---------------------GET ARTIST LIST FROM MYSQL DB--------------------#
+#----------------------------------------------------------------------#
+def Data_Fetch():
+
+	Fetch_QL = 'SELECT * FROM ARTISTS_ONLY;'
+
+	connection=MySQLdb.connect('ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', 'tickets_user', 'tickets_pass', 'tickets_db')
+	cursor=connection.cursor()
+
+	cursor.execute(Fetch_QL)
+	Artists_List = cursor.fetchall()
+	
+	Artists_DF = pd.read_sql('SELECT * FROM ARTISTS_ONLY_EXPANDED', con = connection)
+		
+	return Artists_DF
+	
+
+Data_Fetch()
+
+
+
+
+
+
+
+
+
+
+#-----------------------------------------------------------------------------#
+#-----------CODE FROM STACKOVERFLOW DEFINING SIMPLE FUZZY FUNCTION------------#
+#-----------------------------------------------------------------------------#
 def levenshtein_ratio_and_distance(s, t, ratio_calc = False):
     """ levenshtein_ratio_and_distance:
         Calculates levenshtein distance between two strings.
@@ -94,11 +137,15 @@ def levenshtein_ratio_and_distance(s, t, ratio_calc = False):
 
 def EventBrite_Artist_Search(df):
 
+	#----------------------------------------------------------------#
 	#---------SELECT A SMALL SUBSET OF THE ARTIST DATAFRAME----------#
+	#----------------------------------------------------------------#
 	sample = df.head(3)
-	artists = sample['Artist']
+	artists = sample['artist']
 	
+	#----------------------------------------------------------------#
 	#-----------SELECT ARTISTS COLUMN FROM ARTISTS DATAFRAME---------#
+	#----------------------------------------------------------------#
 	#artists = df['Artist']
 	
 	
