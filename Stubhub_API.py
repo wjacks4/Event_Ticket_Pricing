@@ -53,10 +53,22 @@ def Get_Access_Token():
 	headers = {"Authorization": "Basic Vk9VNHh2R2ZoR085cXBWeEdvM1NBQmVlYm5wVG1BSnc6UlIydEZ3SEc3UGludjRpaw==", "Content-Type": "application/json"}
 	
 	req = requests.post(request_url, data=json.dumps(payload), headers=headers)
-	print(req)	
-	res = requests.get(request_url, data=json.dumps(payload), headers=headers)
 	json_obj = req.json()
 	print(json_obj)
+	token = json_obj['access_token']
+	print(token)
+	return (token)
 	
 	
 Get_Access_Token()
+
+def Get_Event_IDs():
+
+	#---------DEFINE URL BUILDING BLOCKS-------#
+	base_url = 'https://api.stubhub.com/sellers/search/events/v3'
+	
+	query_params = 'q=DaBaby'
+
+
+
+
