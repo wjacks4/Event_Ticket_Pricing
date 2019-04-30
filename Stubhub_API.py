@@ -23,9 +23,9 @@ import numpy as np
 import MySQLdb
 import base64
 
-#-----------------------------------------------------------#
-#---------------WE GOT THE MF STUBHUB API BOIII-------------#
-#-----------------------------------------------------------#
+#-------------------------------------------------------------#
+#---------------WE GOT THE MF STUBHUB API BOIII---------------#
+#-------------------------------------------------------------#
 
 Stubhub_Key = b'VOU4xvGfhGO9qpVxGo3SABeebnpTmAJw'
 
@@ -35,8 +35,39 @@ Cat_Key_Secret = (Stubhub_Key + b":" + Stubhub_Secret)
 print(Cat_Key_Secret)
 
 Cat_Key_encode = base64.standard_b64encode(Cat_Key_Secret)
-
 print(Cat_Key_encode)
+
+
+
+
+#----------------------------------------------------------------------#
+#---------------------GET ARTIST LIST FROM MYSQL DB--------------------#
+#----------------------------------------------------------------------#
+def Data_Fetch():
+
+	test_db = pd.read_csv("C:/Users/whjac/Desktop/Ticket Flipping/Event_Ticket_Pricing/Data/test.csv")
+
+	Fetch_QL = 'SELECT * FROM ARTISTS_ONLY;'
+
+	connection=MySQLdb.connect('ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', 'tickets_user', 'tickets_pass', 'tickets_db')
+	cursor=connection.cursor()
+
+	cursor.execute(Fetch_QL)
+	Artists_List = cursor.fetchall()
+	
+	Artists_DF = pd.read_sql('SELECT * FROM ARTISTS_ONLY_EXPANDED', con = connection)
+	
+	#print(Artists_DF)
+	#Artists_DF.to_csv('C:/Users/whjac/Desktop/Ticket Flipping/Event_Ticket_Pricing/Data/Arist_Data.csv', index = False, encoding = 'utf-8')
+		
+	return Artists_DF
+
+
+
+
+
+
+
 
 def Get_Access_Token():
 
@@ -59,15 +90,46 @@ def Get_Access_Token():
 	print(token)
 	return (token)
 	
-	
 Get_Access_Token()
 
+
 def Get_Event_IDs():
+
+	#---------SELECT A SMALL SUBSET OF THE ARTIST DATAFRAME----------#
+	Test = Data_Fetch().head(10)
+	print(Test)
 
 	#---------DEFINE URL BUILDING BLOCKS-------#
 	base_url = 'https://api.stubhub.com/sellers/search/events/v3'
 	
-	query_params = 'q=DaBaby'
+	#------------------GET ARTIST LIST FROM DF----------------#
+	artists = Test['artist']
+	
+	#--------------------LOOP THRU ARTISTS--------------------#
+	for artist in artists:	
+	
+	
+		#---------ENCODE ARTIST NAMES IN HTML SYNTAX-----------#
+		artist_encode = artist.replace(" ", "%20")
+		
+		#---------------------QUERY PARAMS---------------------#
+		query_params = ("q=" + artist_encode)		
+		
+		#---------BUILD THE URL TO REQUEST DATA FROM-----------#
+		artist_url = (base_url + "?" + artist_encode)
+		print(artist_url)
+		
+		#--------------ADD HEADERS & MAKE REQUEST----------------#
+		Auth_Header = ("Bearer " + Get_Access_Token())
+		headers = {"Authorization": Auth_Header, "Accept": "application/json"}
+		req = requests.get(artist_url, headers=headers)
+		json_obj = req.json()
+		
+		print(json_obj)
+		
+Get_Event_IDs()
+		
+		
 
 
 

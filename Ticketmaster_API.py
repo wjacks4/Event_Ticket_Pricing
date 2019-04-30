@@ -118,40 +118,29 @@ def EVENT_IDs (df):
 			#----------ISOLATE EVENT OBJECT FROM JSON RESPONSE----------------#
 			event_Dat = json_Dat['_embedded']['events']		
 			
-
 			#-------------EXTRACT EVENT ID FROM DATA IN EACH MEMBER OF EVENT OBJECT-----------#
 			for event in event_Dat:
 				name = event['name']
 				id = event['id']
 				
-
 				#-------------CREATE TEMPORARY DATAFRAME FOR EACH EVENT ID--------------------#
 				each_event_ID = pd.DataFrame([[name, id]], columns=['attraction_name', 'ID'])
 			
-			
-
 				#----------------APPEND TEMPORARY DATAFRAME ONTO MASTER DF--------------------#
 				event_ID_df = event_ID_df.append(each_event_ID)
 			
-
 			#----------WAIT TWO SECONDS BEFORE SUBMITTING NEXT QUERY TO AVOID OVERLOADING API-----------#
 			time.sleep(2)
 		
-		
-
 		#----------THROW EXCEPTION WHEN NO EVENTS EXIST FOR AN ARTIST-----------#
 		except KeyError as No_Events:
 		
 			print('No Events for this Artist!')
 			
-			
 	print(event_ID_df)
-	
 
 	#----------RETURN THE ID DATAFRAME FOR USE WITH MAIN FUNCTION--------------#
 	return event_ID_df
-
-	
 	
 
 #--------SAMPLE EVENT URL FOR TESTING PURPOSES----------#
@@ -175,17 +164,13 @@ def EVENT_DETAILS():
 	print(Test)
 
 	#-----------SELECT ARTISTS COLUMN FROM ARTISTS DATAFRAME---------#
-	
 	#df = Data_Fetch()
-	
 	
 	#--------FEED THE RESULT OF THE DATA FETCH FUNCTION INTO THE EVENT_ID FUNCTION------------#
 	IDs = EVENT_IDs(Test)['ID']
 	
-	
 	#--------------CREATE EMPTY EVENT DATAFRAME TO APPEND DATA ON TO LATER----------------#
 	event_df = pd.DataFrame()
-	
 	
 	#------EXTRACT INFORMATION FOR EACH EVENT, USING EVENT IDs GENERATED EARLIER------#
 	for event_ID in IDs:
