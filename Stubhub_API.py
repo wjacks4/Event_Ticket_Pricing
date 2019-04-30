@@ -96,7 +96,7 @@ Get_Access_Token()
 def Get_Event_IDs():
 
 	#---------SELECT A SMALL SUBSET OF THE ARTIST DATAFRAME----------#
-	Test = Data_Fetch().head(10)
+	Test = Data_Fetch().head(1)
 	print(Test)
 
 	#---------DEFINE URL BUILDING BLOCKS-------#
@@ -116,7 +116,7 @@ def Get_Event_IDs():
 		query_params = ("q=" + artist_encode)		
 		
 		#---------BUILD THE URL TO REQUEST DATA FROM-----------#
-		artist_url = (base_url + "?" + artist_encode)
+		artist_url = (base_url + "?" + query_params)
 		print(artist_url)
 		
 		#--------------ADD HEADERS & MAKE REQUEST----------------#
