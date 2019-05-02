@@ -1,5 +1,5 @@
-import mysql
-from mysql.connector import Error
+#import mysql
+#from mysql.connector import Error
 import psycopg2 as p
 import json
 from dateutil import parser
@@ -11,16 +11,15 @@ import urllib.request
 import pandas as pd
 import unidecode
 from unidecode import unidecode
-import spotipy
-from spotipy.oauth2 import SpotifyClientCredentials
-from spotipy.client import Spotify
 import requests
 import urllib
 from urllib import parse
 import sys
 import base64
 import numpy as np
-import MySQLdb
+#import mysql-python
+import pymysql
+#import MySQLdb
 import base64
 
 #-------------------------------------------------------------#
@@ -43,27 +42,45 @@ print(Cat_Key_encode)
 #----------------------------------------------------------------------#
 #---------------------GET ARTIST LIST FROM MYSQL DB--------------------#
 #----------------------------------------------------------------------#
-def Data_Fetch():
+def Data_Fetch_MySQLdb():
 
-	test_db = pd.read_csv("C:/Users/whjac/Desktop/Ticket Flipping/Event_Ticket_Pricing/Data/test.csv")
+    #test_db = pd.read_csv("C:/Users/whjac/Desktop/Ticket Flipping/Event_Ticket_Pricing/Data/test.csv")
 
-	Fetch_QL = 'SELECT * FROM ARTISTS_ONLY;'
+    Fetch_QL = 'SELECT * FROM ARTISTS_ONLY;'
 
-	connection=MySQLdb.connect('ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', 'tickets_user', 'tickets_pass', 'tickets_db')
-	cursor=connection.cursor()
 
-	cursor.execute(Fetch_QL)
-	Artists_List = cursor.fetchall()
+    #USINC MySQLdb#
+    connection=MySQLdb.connect('ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', 'tickets_user', 'tickets_pass', 'tickets_db')
+    cursor=connection.cursor()
+
+    cursor.execute(Fetch_QL)
+    Artists_List = cursor.fetchall()
 	
-	Artists_DF = pd.read_sql('SELECT * FROM ARTISTS_ONLY_EXPANDED', con = connection)
+    Artists_DF = pd.read_sql('SELECT * FROM ARTISTS_ONLY_EXPANDED', con = connection)
 	
-	#print(Artists_DF)
-	#Artists_DF.to_csv('C:/Users/whjac/Desktop/Ticket Flipping/Event_Ticket_Pricing/Data/Arist_Data.csv', index = False, encoding = 'utf-8')
+    print(Artists_DF)
+    Artists_DF.to_csv('C:/Users/whjac/Desktop/Ticket Flipping/Event_Ticket_Pricing/Data/Arist_Data.csv', index = False, encoding = 'utf-8')
 		
-	return Artists_DF
 
+#Data_Fetch_MySQLdb()
 
+def Data_Fetch_pymysql():
 
+    #Fetch_QL = 'SELECT * FROM ARTISTS_ONLY;'
+    
+    #USING pymysql#
+    connection = pymysql.connect (host = 'ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com',
+                                  user = 'tickets_user',
+                                  password = 'tickets_pass',
+                                  db = 'tickets_db')
+    
+    Fetch_QL = 'SELECT * FROM ARTISTS_ONLY;'
+    cursor = connection.cursor()
+    Artists_DF = pd.read_sql('SELECT * FROM ARTISTS_ONLY_EXPANDED', con = connection)  
+    print(Artists_DF)
+    return Artists_DF
+
+Data_Fetch_pymysql()
 
 
 
@@ -90,43 +107,63 @@ def Get_Access_Token():
 	print(token)
 	return (token)
 	
-Get_Access_Token()
+#Get_Access_Token()
 
 
 def Get_Event_IDs():
 
-	#---------SELECT A SMALL SUBSET OF THE ARTIST DATAFRAME----------#
-	Test = Data_Fetch().head(1)
-	print(Test)
+    #---------SELECT A SMALL SUBSET OF THE ARTIST DATAFRAME----------#
+    Test = Data_Fetch_pymysql().head(2)
+    print(Test)
 
-	#---------DEFINE URL BUILDING BLOCKS-------#
-	base_url = 'https://api.stubhub.com/sellers/search/events/v3'
+    #---------DEFINE URL BUILDING BLOCKS-------#
+    base_url = 'https://api.stubhub.com/sellers/search/events/v3'
 	
-	#------------------GET ARTIST LIST FROM DF----------------#
-	artists = Test['artist']
+    #------------------GET ARTIST LIST FROM DF----------------#
+    artists = Test['artist']
 	
-	#--------------------LOOP THRU ARTISTS--------------------#
-	for artist in artists:	
+    #--------------------LOOP THRU ARTISTS--------------------#
+    for artist in artists:	
 	
 	
-		#---------ENCODE ARTIST NAMES IN HTML SYNTAX-----------#
-		artist_encode = artist.replace(" ", "%20")
+            #---------ENCODE ARTIST NAMES IN HTML SYNTAX-----------#
+            artist_encode = artist.replace(" ", "%20")
 		
-		#---------------------QUERY PARAMS---------------------#
-		query_params = ("q=" + artist_encode)		
+            #---------------------QUERY PARAMS---------------------#
+            query_params = ("q=" + artist_encode + "&" + "rows=100")		
 		
-		#---------BUILD THE URL TO REQUEST DATA FROM-----------#
-		artist_url = (base_url + "?" + query_params)
-		print(artist_url)
+            #---------BUILD THE URL TO REQUEST DATA FROM-----------#
+            artist_url = (base_url + "?" + query_params)
+            print(artist_url)
 		
-		#--------------ADD HEADERS & MAKE REQUEST----------------#
-		Auth_Header = ("Bearer " + Get_Access_Token())
-		headers = {"Authorization": Auth_Header, "Accept": "application/json"}
-		req = requests.get(artist_url, headers=headers)
-		json_obj = req.json()
+            #--------------ADD HEADERS & MAKE REQUEST----------------#
+            Auth_Header = ("Bearer " + Get_Access_Token())
+            headers = {"Authorization": Auth_Header, "Accept": "application/json"}
+            req = requests.get(artist_url, headers=headers)
+            json_obj = req.json()
 		
-		print(json_obj)
+            #print(json_obj)
+            
+            event_list = json_obj['events']
+            
+            for event in event_list:
+                
+                event_name = event['name']
+                event_id = event['id']
+                event_venue= event['venue']['name']
+                event_city = event['venue']['city']
+                event_state = event['venue']['state']
+                event_date_UTC = event['eventDateUTC']
+                lowest_price = event['ticketInfo']['minListPrice']
+                highest_price = event['ticketInfo']['maxListPrice']
+                ticket_count = event['ticketInfo']['totalTickets']
+                listing_count = event['ticketInfo']['totalListings']
+                
+                event_array = pd.DataFrame([[event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count]], 
+                              columns =['name', 'ID', 'venue', 'city', 'state', 'date (UTC)', 'lowest_price', 'highest_price', 'ticket_count', 'listing_count'])
+
 		
+                print(event_array)
 Get_Event_IDs()
 		
 		
