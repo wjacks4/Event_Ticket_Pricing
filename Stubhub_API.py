@@ -111,6 +111,10 @@ def Get_Access_Token():
 
 
 def Get_Event_IDs():
+    
+    #--------DEFINE THE SQL DB CONNECTION-------#
+    connection=MySQLdb.connect('ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', 'tickets_user', 'tickets_pass', 'tickets_db')
+    cursor=connection.cursor()
 
     #---------SELECT A SMALL SUBSET OF THE ARTIST DATAFRAME----------#
     Test = Data_Fetch_pymysql().head(2)
@@ -163,11 +167,21 @@ def Get_Event_IDs():
                 event_array = pd.DataFrame([[event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count]], 
                               columns =['name', 'ID', 'venue', 'city', 'state', 'date (UTC)', 'lowest_price', 'highest_price', 'ticket_count', 'listing_count'])
 
-		
+		        insert_tuple = (event_name, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count)
+        
                 print(event_array)
                 
                 event_QL = 'INSERT INTO `STUBHUB_EVENTS` (`name`, `id`, `venue_name`, `venue_city`, `venue_state`, \
-                            `date_UTC`, `lowest_price`, `highest_price`, `ticket_count`, `listing_count`, `add_timestamp`) ARTISTS_ONLY;'
+                            `date_UTC`, `lowest_price`, `highest_price`, `ticket_count`, `listing_count`, `add_timestamp`) \
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);' 
+                            
+                result  = cursor.execute(event_QL, insert_tuple)
+                connection.commit()
+                
+                
+                
+                print ("Record inserted successfully into python_users table")                           
+                
 Get_Event_IDs()
 		
 		
