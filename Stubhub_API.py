@@ -146,6 +146,7 @@ def Get_Event_IDs():
             
             event_list = json_obj['events']
             
+            
             for event in event_list:
                 
                 event_name = event['name']
@@ -164,6 +165,9 @@ def Get_Event_IDs():
 
 		
                 print(event_array)
+                
+                event_QL = 'INSERT INTO `STUBHUB_EVENTS` (`name`, `id`, `venue_name`, `venue_city`, `venue_state`, \
+                            `date_UTC`, `lowest_price`, `highest_price`, `ticket_count`, `listing_count`, `add_timestamp`) ARTISTS_ONLY;'
 Get_Event_IDs()
 		
 		
