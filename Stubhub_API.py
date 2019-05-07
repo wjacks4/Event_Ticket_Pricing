@@ -21,6 +21,8 @@ import numpy as np
 import pymysql
 #import MySQLdb
 import base64
+import datetime
+from datetime import datetime
 
 #-------------------------------------------------------------#
 #---------------WE GOT THE MF STUBHUB API BOIII---------------#
@@ -110,9 +112,9 @@ def Get_Access_Token():
 #Get_Access_Token()
 
 
-def Get_Event_IDs():
+def Get_Event_IDs_MySQLdb():
     
-    #--------DEFINE THE SQL DB CONNECTION-------#
+    #--------DEFINE THE SQL DB CONNECTION (MYSQLDB)-------#
     connection=MySQLdb.connect('ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', 'tickets_user', 'tickets_pass', 'tickets_db')
     cursor=connection.cursor()
 
@@ -130,62 +132,139 @@ def Get_Event_IDs():
     for artist in artists:	
 	
 	
-            #---------ENCODE ARTIST NAMES IN HTML SYNTAX-----------#
-            artist_encode = artist.replace(" ", "%20")
-		
-            #---------------------QUERY PARAMS---------------------#
-            query_params = ("q=" + artist_encode + "&" + "rows=100")		
-		
-            #---------BUILD THE URL TO REQUEST DATA FROM-----------#
-            artist_url = (base_url + "?" + query_params)
-            print(artist_url)
-		
-            #--------------ADD HEADERS & MAKE REQUEST----------------#
-            Auth_Header = ("Bearer " + Get_Access_Token())
-            headers = {"Authorization": Auth_Header, "Accept": "application/json"}
-            req = requests.get(artist_url, headers=headers)
-            json_obj = req.json()
-		
-            #print(json_obj)
-            
-            event_list = json_obj['events']
-            
-            
-            for event in event_list:
-                
-                event_name = event['name']
-                event_id = event['id']
-                event_venue= event['venue']['name']
-                event_city = event['venue']['city']
-                event_state = event['venue']['state']
-                event_date_UTC = event['eventDateUTC']
-                lowest_price = event['ticketInfo']['minListPrice']
-                highest_price = event['ticketInfo']['maxListPrice']
-                ticket_count = event['ticketInfo']['totalTickets']
-                listing_count = event['ticketInfo']['totalListings']
-                
-                event_array = pd.DataFrame([[event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count]], 
-                              columns =['name', 'ID', 'venue', 'city', 'state', 'date (UTC)', 'lowest_price', 'highest_price', 'ticket_count', 'listing_count'])
-
-		        insert_tuple = (event_name, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count)
+        #---------ENCODE ARTIST NAMES IN HTML SYNTAX-----------#
+        artist_encode = artist.replace(" ", "%20")
+    		
+        #---------------------QUERY PARAMS---------------------#
+        query_params = ("q=" + artist_encode + "&" + "rows=100")		
+    		
+        #---------BUILD THE URL TO REQUEST DATA FROM-----------#
+        artist_url = (base_url + "?" + query_params)
+        print(artist_url)
+    		
+        #--------------ADD HEADERS & MAKE REQUEST----------------#
+        Auth_Header = ("Bearer " + Get_Access_Token())
+        headers = {"Authorization": Auth_Header, "Accept": "application/json"}
+        req = requests.get(artist_url, headers=headers)
+        json_obj = req.json()
+    		
+        #print(json_obj)
         
-                print(event_array)
+        event_list = json_obj['events']
+        
+        
+        for event in event_list:
+            
+            event_name = event['name']
+            event_id = event['id']
+            event_venue= event['venue']['name']
+            event_city = event['venue']['city']
+            event_state = event['venue']['state']
+            event_date_UTC = event['eventDateUTC']
+            lowest_price = event['ticketInfo']['minListPrice']
+            highest_price = event['ticketInfo']['maxListPrice']
+            ticket_count = event['ticketInfo']['totalTickets']
+            listing_count = event['ticketInfo']['totalListings']
+            
+            event_array = pd.DataFrame([[event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count]], 
+                          columns =['name', 'ID', 'venue', 'city', 'state', 'date (UTC)', 'lowest_price', 'highest_price', 'ticket_count', 'listing_count'])
+    
+            insert_tuple = (event_name, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count)
+    
+            print(event_array)
+            
+            event_QL = 'INSERT INTO `STUBHUB_EVENTS` (`name`, `id`, `venue_name`, `venue_city`, `venue_state`, \
+                        `date_UTC`, `lowest_price`, `highest_price`, `ticket_count`, `listing_count`, `add_timestamp`) \
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);' 
+                        
+            result  = cursor.execute(event_QL, insert_tuple)
+            connection.commit()
+            
+            
+            
+            print ("Record inserted successfully into python_users table")                           
                 
-                event_QL = 'INSERT INTO `STUBHUB_EVENTS` (`name`, `id`, `venue_name`, `venue_city`, `venue_state`, \
-                            `date_UTC`, `lowest_price`, `highest_price`, `ticket_count`, `listing_count`, `add_timestamp`) \
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);' 
-                            
-                result  = cursor.execute(event_QL, insert_tuple)
-                connection.commit()
-                
-                
-                
-                print ("Record inserted successfully into python_users table")                           
-                
-Get_Event_IDs()
+#Get_Event_IDs_MySQLdb()
 		
 		
 
+
+def Get_Event_IDs_pymysql():
+    
+    #--------DEFINE THE SQL DB CONNECTION (MYSQLDB)-------#
+    connection=pymysql.connect('ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', 'tickets_user', 'tickets_pass', 'tickets_db')
+    cursor=connection.cursor()
+
+    #---------SELECT A SMALL SUBSET OF THE ARTIST DATAFRAME----------#
+    Test = Data_Fetch_pymysql().head(2)
+    print(Test)
+
+    #---------DEFINE URL BUILDING BLOCKS-------#
+    base_url = 'https://api.stubhub.com/sellers/search/events/v3'
+	
+    #------------------GET ARTIST LIST FROM DF----------------#
+    artists = Test['artist']
+    
+    #-----------GET CURRENT DATETIME FOR TIMESTAMP ADD------------#
+    current_Date = datetime.now()
+	
+    #--------------------LOOP THRU ARTISTS--------------------#
+    for artist in artists:	
+	
+	
+        #---------ENCODE ARTIST NAMES IN HTML SYNTAX-----------#
+        artist_encode = artist.replace(" ", "%20")
+    		
+        #---------------------QUERY PARAMS---------------------#
+        query_params = ("q=" + artist_encode + "&" + "rows=100")		
+    		
+        #---------BUILD THE URL TO REQUEST DATA FROM-----------#
+        artist_url = (base_url + "?" + query_params)
+        print(artist_url)
+    		
+        #--------------ADD HEADERS & MAKE REQUEST----------------#
+        Auth_Header = ("Bearer " + Get_Access_Token())
+        headers = {"Authorization": Auth_Header, "Accept": "application/json"}
+        req = requests.get(artist_url, headers=headers)
+        json_obj = req.json()
+    		
+        #print(json_obj)
+        
+        event_list = json_obj['events']
+        
+        
+        for event in event_list:
+            
+            event_name = event['name']
+            event_id = event['id']
+            event_venue= event['venue']['name']
+            event_city = event['venue']['city']
+            event_state = event['venue']['state']
+            event_date_UTC = event['eventDateUTC']
+            lowest_price = event['ticketInfo']['minListPrice']
+            highest_price = event['ticketInfo']['maxListPrice']
+            ticket_count = event['ticketInfo']['totalTickets']
+            listing_count = event['ticketInfo']['totalListings']
+            
+            event_array = pd.DataFrame([[event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count]], 
+                          columns =['name', 'ID', 'venue', 'city', 'state', 'date_UTC', 'lowest_price', 'highest_price', 'ticket_count', 'listing_count'])
+    
+            insert_tuple = (event_name, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count, current_Date)
+    
+            print(event_array)
+            
+            event_QL = 'INSERT INTO `STUBHUB_EVENTS` (`name`, `id`, `name`, `city`, `state`, \
+                        `date_UTC`, `lowest_price`, `highest_price`, `ticket_count`, `listing_count`, `add_timestamp`) \
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);' 
+                        
+            result  = cursor.execute(event_QL, insert_tuple)
+            connection.commit()
+            
+            
+            
+            print ("Record inserted successfully into python_users table")                           
+                
+Get_Event_IDs_pymysql()
 
 
 
