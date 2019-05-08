@@ -53,7 +53,7 @@ size = '20'
 #----------------------------------------------------------------------#
 def Data_Fetch_pymysql():
 
-	test_db = pd.read_csv("C:/Users/wjack/Desktop/Event_Ticket_Pricing/Event_Ticket_Pricing/Data/test.csv")
+	#test_db = pd.read_csv("C:/Users/wjack/Desktop/Event_Ticket_Pricing/Event_Ticket_Pricing/Data/test.csv")
 
 	Fetch_QL = 'SELECT * FROM ARTISTS_ONLY;'
 
@@ -162,135 +162,124 @@ sample_event_url = ('https://app.ticketmaster.com/discovery/v2/events/1AKZA_YGkd
 def EVENT_DETAILS():
 
 
-	#---------SELECT A SMALL SUBSET OF THE ARTIST DATAFRAME----------#
-	Test = Data_Fetch_pymysql().head(10)
-	print(Test)
+    #---------SELECT A SMALL SUBSET OF THE ARTIST DATAFRAME----------#
+    Test = Data_Fetch_pymysql().head(2)
+    print(Test)
 
-	#-----------SELECT ARTISTS COLUMN FROM ARTISTS DATAFRAME---------#
-	#df = Data_Fetch()
+	#----------CONNECT TO DB AND SUBMIT SQL QUERY------------#
+    connection=pymysql.connect(host = 'ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', user = 'tickets_user', password = 'tickets_pass', db = 'tickets_db')
+    cursor=connection.cursor()
 	
-	#--------FEED THE RESULT OF THE DATA FETCH FUNCTION INTO THE EVENT_ID FUNCTION------------#
-	IDs = EVENT_IDs(Test)['ID']
+    #--------FEED THE RESULT OF THE DATA FETCH FUNCTION INTO THE EVENT_ID FUNCTION------------#
+    IDs = EVENT_IDs(Test)['ID']
 	
-	#--------------CREATE EMPTY EVENT DATAFRAME TO APPEND DATA ON TO LATER----------------#
-	event_df = pd.DataFrame()
+    #--------------CREATE EMPTY EVENT DATAFRAME TO APPEND DATA ON TO LATER----------------#
+    event_df = pd.DataFrame()
 	
-	#------EXTRACT INFORMATION FOR EACH EVENT, USING EVENT IDs GENERATED EARLIER------#
-	for event_id in IDs:
-	
-		#--------------BUILD URL FOR EACH SPECIFIC QUERY---------------#
-		event_base_url = ('https://app.ticketmaster.com/discovery/v2/events/')
-		api_key = ('.json?apikey=OrCBYA46Xdvtl7RFfU88egw4L8HDPRW3')
-		event_url = (event_base_url + event_id + api_key)
-		print(event_url)
-	
-	
-		#---------GET RAW RESPONSE FROM URL, DECODE IT TO JSON----------#
-		raw_Data=urllib.request.urlopen(event_url)
-		encoded_Dat = raw_Data.read().decode('utf-8', 'ignore')			
-		json_Dat = json.loads(encoded_Dat)
+    #-----------GET CURRENT DATETIME FOR TIMESTAMP ADD------------#
+    current_Date = datetime.now()
+    #current_Date = 'TEST'
+    
+    #------EXTRACT INFORMATION FOR EACH EVENT, USING EVENT IDs GENERATED EARLIER------#
+    for event_id in IDs:
+
+        #--------------BUILD URL FOR EACH SPECIFIC QUERY---------------#
+        event_base_url = ('https://app.ticketmaster.com/discovery/v2/events/')
+        api_key = ('.json?apikey=OrCBYA46Xdvtl7RFfU88egw4L8HDPRW3')
+        event_url = (event_base_url + event_id + api_key)
+        print(event_url)
+        	
+        	
+        #---------GET RAW RESPONSE FROM URL, DECODE IT TO JSON----------#
+        raw_Data=urllib.request.urlopen(event_url)
+        encoded_Dat = raw_Data.read().decode('utf-8', 'ignore')			
+        json_Dat = json.loads(encoded_Dat)
+                
+        print(json_Dat)
 		
+        #---------------------------------------------------------------#
+        #-----EXTRACT VARIABLES OF INTEREST FROM JSON OBJECTS-----------#
+        #-----------HANDLE EXCEPTIONS FOR MISSING VALUES----------------#
+        #---------------------------------------------------------------#
+        try:
+            event_name = json_Dat['name']
+        except KeyError as noName:
+            event_name = ''
 		
-		#---------------------------------------------------------------#
-		#-----EXTRACT VARIABLES OF INTEREST FROM JSON OBJECTS-----------#
-		#-----------HANDLE EXCEPTIONS FOR MISSING VALUES----------------#
-		#---------------------------------------------------------------#
-		
-		try:
-			event_name = json_Dat['name']
-		except KeyError as noName:
-			event_name = ''
-		
-		try: 
-			event_venue = json_Dat['_embedded']['venues'][0]['name']
-		except KeyError as noVenue:
-			event_venue=' '
+        try: 
+            event_venue = json_Dat['_embedded']['venues'][0]['name']
+        except KeyError as noVenue:
+            event_venue=' '
 			
-		try:
-			event_city = json_Dat['_embedded']['venues'][0]['city']['name']
-		except KeyError as noCity:
-			event_city = ' '
+        try:
+            event_city = json_Dat['_embedded']['venues'][0]['city']['name']
+        except KeyError as noCity:
+            event_city = ' '
 
-		try:
-			event_state = json_Dat['_embedded']['venues'][0]['state']['name']
-		except KeyError as noState:
-			event_state = ' '
+        try:
+            event_state = json_Dat['_embedded']['venues'][0]['state']['name']
+        except KeyError as noState:
+            event_state = ' '
 
-		try:
-			event_date_Local = json_Dat['dates']['start']['localDate']
-		except KeyError as noEventDate:
-			event_date_Local = ' '
+        try:
+            event_date_Local = json_Dat['dates']['start']['localDate']
+        except KeyError as noEventDate:
+            event_date_Local = ' '
 
-		try:
-			event_time_Local = json_Dat['dates']['start']['localTime']
-		except KeyError as noEventTime:
-			event_time_Local = ' '
+        try:
+            event_time_Local = json_Dat['dates']['start']['localTime']
+        except KeyError as noEventTime:
+            event_time_Local = ' '
 
-		try:
-			event_TZ = json_Dat['dates']['timezone']
-		except KeyError as noTZ:
-			event_TZ = ' '
+        try:
+            event_TZ = json_Dat['dates']['timezone']
+        except KeyError as noTZ:
+            event_TZ = ' '
 
-		try:
-			event_sales = json_Dat['sales']
-		except KeyError as noSales:
-			event_sales = ''
+        try: 
+            event_sale_start = json_Dat['sales']['public']['startDateTime']
+        except KeyError as noSaleStart:
+            event_sale_start = ' '
 
-		try: 
-			event_sale_start = json_Dat['sales']['public']['startDateTime']
-		except KeyError as noSaleStart:
-			event_sale_start = ' '
-
-		try:
-			event_lowest_price = json_Dat['priceRanges'][0]['min']
-		except KeyError as noPriceDat:
-			event_lowest_price = ''
+        try:
+            event_lowest_price = json_Dat['priceRanges'][0]['min']
+        except KeyError as noPriceDat:
+            event_lowest_price = ''
 			
-		
-		
-		event_array = pd.DataFrame([[event_name, event_id, event_venue, event_city, event_state, event_date_Local, event_time_Local, event_TZ, highest_price, capacity, sold_out_indicator, shareable, available_elsewhere]], 
-			columns =['name', 'ID', 'venue', 'city', 'state', 'date_UTC', 'lowest_price', 'highest_price', 'capacity', 'sold_out_indicator', 'shareable', 'available_elsewhere'])
+        try:
+            event_highest_price = json_Dat['priceRanges'][0]['max']
+        except KeyError as noPriceDat:
+            event_highest_price = ''
 		
 
-		#insert_tuple = (event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, capacity, sold_out_indicator, shareable, available_elsewhere, current_Date)
-			
-		#print(insert_tuple)
-					
-		#event_QL = 'INSERT INTO `EVENTBRITE_EVENTS` (`name`, `id`, `venue`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `capacity`, `sold_out`, `shareable`, `available_elsewhere`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'                       
-
-		
-		
-		
-		
 		#-------CREATE A TEMPORARY DATAFRAME FOR EACH EVENT----------#
-		event_profile=pd.DataFrame([[event_name, event_venue, event_city, event_start_date, event_sale_start, event_lowest_price ]], 
-						columns=['attraction_name', 'venue', 'city', 'event_date', 'sale_start_date', 'lowest_face_val_price'])	
+        event_profile=pd.DataFrame([[event_name, event_id, event_venue, event_city, event_state, event_date_Local, event_time_Local, event_TZ, event_sale_start, event_lowest_price, event_highest_price]], 
+						columns=['attraction_name', 'event_id', 'venue', 'city', 'state', 'event_date', 'event_time', 'event_TZ', 'sale_start_date', 'event_lowest_price', 'event_highest_price'])	
 
+        
+        insert_tuple = (event_name, event_id, event_venue, event_city, event_state, event_date_Local, event_time_Local, event_TZ, event_sale_start, event_lowest_price, event_highest_price, current_Date)
+
+        print(insert_tuple)
 
 		#------------SQL TIME - SUBSTITUTE STRINGS INTO SQL QUERY FOR DB SUBMISSION-------------#
-		TestQL = 'INSERT INTO TEST_Table(event_name, event_venue, city, event_date, sale_start, lowest_price) VALUES ("%s", "%s", "%s", "%s", "%s", "%s");' %(event_name, event_venue, event_city, event_start_date, event_sale_start, event_lowest_price)
+        event_QL = 'INSERT INTO TICKETMASTER_TABLE(name, id, vanue, city, state, date_local, time_local, time_zone, sale_start_date, lowest_price, highest_price, create_ts) VALUES ("%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s");' 
 
-		print(TestQL)
+        print(event_QL)
 
-		
-		#----------CONNECT TO DB AND SUBMIT SQL QUERY------------#
-		connection=pymysql.connect(host = 'ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', user = 'tickets_user', password = 'tickets_pass', db = 'tickets_db')
-		cursor=connection.cursor()
-		cursor.execute(TestQL)
-		connection.commit()	
+        cursor.execute(event_QL)
+        connection.commit()	
 								
-	
 		#-------APPEND EACH EVENT TO MASTER DATAFRAME...NOT SURE IF I STILL NEED THIS------#
-		event_df = event_df.append(event_profile)
+        event_df = event_df.append(event_profile)
 		
 		#---WAIT TWO SECONDS TO AVOID OVERLOADING API-----#
-		time.sleep(5)
+        time.sleep(5)
 			
 	#---------EXPORT AGGREGATE EVENT DATAFRAME TO CSV---------#
 	#event_df.to_csv('C:/Users/whjac/Desktop/Ticket Flipping/Event_Ticket_Pricing/Data/Ticketmaster_event_list.csv', index=False)
 	#print(event_df)
 	
-	return event_df
+    return event_df
 						
 EVENT_DETAILS()
 
