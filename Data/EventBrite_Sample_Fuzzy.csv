@@ -1,15 +1,41 @@
-event_name,event_id,event_start,event_end,event_capacity,listed,shareable,venue_id,venue_state,venue_city,minimum_price,maximum_price,sold_out_indicator,available_elsewhere
-Da Baby @ Mohawk,56678924188,2019-05-01T00:00:00Z,2019-05-01T11:00:00Z,,True,False,18828404,TX,Austin,20.00,70.00,True,False
-DaBaby at Republic NOLA,59925365381,2019-05-20T03:00:00Z,2019-05-20T07:00:00Z,,True,False,29250379,LA,New Orleans,40.00,150.00,False,False
-Da baby at kandy bar,60836427392,2019-06-02T01:30:00Z,2019-06-02T05:30:00Z,,True,True,27151322,NC,Charlotte,30.00,60.00,False,False
-Da Baby Live!!!!,60782633493,2019-05-31T00:00:00Z,2019-05-31T05:00:00Z,,True,True,31752790,AR,little rock,40.00,1400.00,False,False
-"DaBaby LIVE in MORGANTOWN, WV!!!",60342458919,2019-05-16T01:00:00Z,2019-05-16T06:00:00Z,,True,True,30660146,WV,Morgantown,30.00,700.00,False,False
-Grad Bash Featuring DaBaby,60825439527,2019-05-04T02:00:28Z,2019-05-04T07:00:28Z,,True,True,31782832,FL,Tampa,20.00,45.00,False,False
-Da Baby Live in San Antonio,60754907564,2019-06-07T00:00:00Z,2019-06-07T05:00:00Z,,True,True,31691375,TX,San Antonio,35.00,60.00,False,False
-DaBaby's Official Baby on Baby After Party & Performance,60843816493,2019-05-13T02:00:00Z,2019-05-13T07:00:00Z,,True,False,31728190,NC,Smithfield,50.00,100.00,False,False
-DaBaby / Wednesday May 1st / Spire,60944922905,2019-05-02T03:00:00Z,2019-05-02T07:00:00Z,,True,True,29480213,TX,Houston,20.00,20.00,False,False
-DaBaby Performing Live 5.4.19 Baby On Baby tour TALLAHASSEE graduation Week,59669760861,2019-05-05T01:00:00Z,2019-05-05T07:00:00Z,,True,True,24296077,FL,Tallahassee,30.00,50.00,False,False
-DA BABY PERFORMING LIVE AT WHISKY RIVER! BLACK BIKEWEEK! ,59606044283,2019-05-26T02:00:00Z,2019-05-26T06:00:00Z,,True,True,31217459,SC,North Myrtle Beach,0.00,50.00,False,False
-Da Baby! Memorial Day Weekend 2k19 at Babylon Miami!,60565728725,2019-05-27T00:00:11Z,2019-05-27T10:00:11Z,,True,True,27916322,FL,Miami,100.00,100.00,False,False
-"DaBaby w/ Prime Society, Stunna 4 Vegas, Blacc Zacc  ",60799921201,2019-06-09T02:00:00Z,2019-06-09T05:30:00Z,,True,True,31708807,AZ,Phoenix,25.00,25.00,False,False
-DA BABY PERFORMING LIVE IN CONCERT SUNDAY MAY 26TH @ BABYLON MIAMI MEMORIAL DAY WKND,60800954291,2019-05-27T00:00:00Z,2019-05-27T10:00:00Z,,True,True,31660515,FL,Miami,100.00,100.00,False,False
+name,ID,venue,city,state,date_UTC,lowest_price,highest_price,capacity,sold_out_indicator,shareable,available_elsewhere
+b'Alpaca Yoga with Flexy Michelle!',60835991087,313 Farms,Anola,Manitoba,2019-05-28T23:30:00Z,20.00,20.00,,False,True,False
+b'Integrative Energy Healing with Michelle Buss',53751751937,OM Toronto,Toronto,ON,2019-06-29T13:00:00Z,75.00,160.00,,False,True,False
+b'Salsa private lessons with Abraham and Michelle',60248610215,LA Dance Center,Los Angeles,CA,2019-04-23T18:00:00Z,70.00,240.00,,False,True,False
+b'Michelle Hemmings fundraising and awareness event',60847363101,Parklands Banqueting Suite,Birmingham,West Midlands,2019-09-06T17:00:00Z,20.00,400.00,,False,False,False
+b'Michelle Kasaboski: Making The Artist Series SHOW #1',60067732204,Fête Events,Kingston,ON,2019-05-11T23:30:00Z,15.00,25.00,,False,True,False
+b'Lightworker Academy with Michelle Hawk: Emotional Alchemy',60472116729,,,,2019-05-14T17:00:00Z,0.00,0.00,,False,True,False
+b'Art Class with Michelle Cordova Acrylic Landscape',56823228807,University Art,Sacramento,CA,2019-07-08T22:00:00Z,35.00,35.00,,False,True,False
+b'Art Class with Michelle Cordova Collage/Mixed Media',57283726167,University Art,Sacramento,CA,2019-09-09T22:00:00Z,35.00,35.00,,False,True,False
+b'Art Class with Michelle Cordova Open Studio',56825363191,University Art,Sacramento,CA,2019-08-12T22:00:00Z,35.00,35.00,,False,True,False
+b'Art Class with Michelle Cordova Watercolor Pumpkins',57284058160,University Art,Sacramento,CA,2019-10-14T22:00:00Z,35.00,35.00,,False,True,False
+b'Michelle Kasaboski: Making The Artist Series SHOW #2',60075676967,Fête Events,Kingston,ON,2019-08-10T23:30:00Z,15.00,25.00,,False,True,False
+b'Michelle Kasaboski: Making The Artist Series SHOW #3',60076637841,Fête Events,Kingston,ON,2019-10-26T23:30:00Z,15.00,25.00,,False,True,False
+b'Paint Flowers like Van Gogh with Michelle Reid',60903717659,The tett Centre for Creativity & Learning,Kingston,ontario,2019-05-12T17:00:31Z,75.00,75.00,,False,True,False
+b'Michelle Live in Show Episode 4 With Special Guest Brooke Wilkerson',60972605705,The Venue,Peterborough,ON,2019-06-09T17:00:00Z,40.00,60.00,,False,False,False
+b'Mini Winter Warmer Yoga Retreat with Michelle Freeman Yoga',60911489906,Kondalilla Eco Resort,Flaxton,QLD,2019-07-12T23:00:00Z,125.00,125.00,,False,True,False
+b'Art Class with Michelle Cordova / Acrylic Still Life 1',55179867469,University Art,Sacramento,CA,2019-05-13T22:00:00Z,35.00,35.00,,False,True,False
+b'Art Class with Michelle Cordova / Acrylic Still Life 2',55180246603,University Art,Sacramento,CA,2019-06-10T22:00:00Z,35.00,35.00,,False,True,False
+b'Curso Alongamentos em Gel Moldado & Fibra de Vidro by Michelle Pink',60850785337,,Montes Claros,Minas Gerais,2019-05-19T13:00:00Z,600.00,600.00,,False,True,False
+b'Michelle Newman Music Presents SING YOUR HEART OUT',60368553970,The Met - Midtown Event Theatre,Toronto,ON,2019-06-15T17:30:00Z,30.00,36.00,,False,True,False
+b'Michelle Newman Music Presents the 3rd Annual Artists For Change',60369318256,The Met - Midtown Event Theatre,Toronto,ON,2019-06-15T22:30:00Z,60.00,500.00,,False,True,False
+b'KIDS ACTING CAMP WITH EMMY AWARD WINNER MICHELLE WATSON',53606906701,,Atlanta,GA,2019-05-27T13:00:00Z,50.00,50.00,,True,True,False
+b'Made BeYOUtiful by Michelle Nicole Event 2 Her Voice Raises Her Vibration',58041635093,Burrows Hall Community Centre,Scarborough,Ontario,2019-05-25T21:30:00Z,10.00,10.00,,True,True,False
+b'Michelle Walker',59907496936,Rockwood Music Hall Stage 3,New York,NY,2019-05-28T23:00:00Z,15.00,15.00,55,False,False,False
+b'Michelle Morgan',61520083225,,,,2019-06-15T20:30:00Z,5.98,5.98,,False,True,False
+b'Gathering|Rassemblement: Mique Michelle',59705236971,Wallack Galleries,Ottawa,ON,2019-05-10T21:30:00Z,0.00,30.00,,False,True,False
+b'Special Guest Michelle Watkins',60141643274,Maitland Conservatory,Huntsville,AL,2019-05-20T00:00:00Z,0.00,0.00,,False,True,False
+b'Michelle Malone at Warehouse 360',60964205580,Warehouse 360 Music Hall,Santa Rosa Beach,Fl,2019-05-26T00:00:00Z,20.00,20.00,,False,True,False
+b'An Evening with Michelle Paver',59193756118,Blackwell's Bookshop Westgate,Oxford,,2019-05-13T18:00:00Z,5.00,5.00,,False,True,False
+b'Water Kefir  - with Michelle (and Potluck)',58791139882,75 Country Ln,Enfield,NS,2019-05-13T15:00:00Z,0.00,0.00,,False,False,False
+b'Introduction to Chirology with Michelle Cavanaugh',61166997135,RainDance Life Center,Royersford,PA,2019-05-11T17:00:00Z,0.00,0.00,,False,True,False
+b'Enneagram Workshop with Michelle Olsen',55661900242,The Indie Alley,Fairfax,CA,2019-05-09T01:30:00Z,25.00,25.00,,False,True,False
+b'Rising Damp \xe2\x80\x93 (Michelle Doyle)',60140801757,The 343,Belfast,,2019-06-06T18:30:00Z,5.00,5.00,,False,True,False
+b'Concert: Michelle Lambert',60610606957,Central Santa Rosa library,Santa Rosa,CA,2019-05-14T02:00:00Z,0.00,0.00,,False,True,False
+"b""Dan and Michelle's Jack & Jill""",60679702624,Royal Canadian Legion Branch 643,Toronto,ON,2019-06-01T23:00:00Z,15.00,15.00,,False,False,False
+b'Yoga in the Vineyard with Michelle',61187247705,Averill House Vineyard,Brookline,NH,2019-06-14T21:30:00Z,10.00,22.60,,False,True,False
+b'Feature Entertainer: Michelle Lynn',53519348813,Elite,Charleston,WV,2019-11-15T01:00:00Z,0.00,0.00,,False,False,False
+b'Feature Entertainer: Michelle Lynn',53535989586,Southern X-Posure,Princeton,WV,2019-11-16T01:00:00Z,0.00,0.00,,False,False,False
+b'Feature Entertainer: Michelle Lynn',53536882256,Southern X-Posure,Barboursville,WV,2019-11-17T01:00:00Z,0.00,0.00,,False,False,False
+b'In Conversation With Michelle Gable',59013304382,M.Judson Booksellers,Greenville,SC,2019-05-23T23:00:00Z,0.00,0.00,,True,True,False
+"b""Michelle's Private Party""",61443669670,,,,2019-05-18T20:00:00Z,35.00,35.00,,False,True,False

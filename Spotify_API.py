@@ -1,8 +1,8 @@
-import mysql
-from mysql.connector import Error
+#import mysqlclient as mysql
+#from mysql.connector import Error
 import psycopg2 as p
 import json
-from dateutil import parser
+#from dateutil import parser
 import time
 import os
 import subprocess
@@ -25,7 +25,8 @@ from urllib import parse
 
 Spotify_client_ID = 'ab3b70083f5f469188f8e49b79d5eadb'
 Spotify_client_secret = '6ecf81925e2740c9adecaad28685457a'
-Spotify_Playlist_list = pd.read_csv('C:/Users/whjac/Desktop/Ticket Flipping/Event_Ticket_Pricing/Data/Spotify Chart Names2.csv')
+#Spotify_Playlist_list = pd.read_csv('C:/Users/whjac/Desktop/Ticket Flipping/Event_Ticket_Pricing/Data/Spotify Chart Names2.csv')
+Spotify_Playlist_list = pd.read_csv('C:/Users/wjack/Desktop/Event_Ticket_Pricing/Event_Ticket_Pricing/Data/Spotify Chart Names2.csv')
 #print(Spotify_Playlist_list)
 
 
@@ -152,9 +153,9 @@ def Playlist_Artists(user_in, ID_in):
 			artist_df = artist_df.append(artist_array)
 		
 	return(artist_df)
-				
-playlist_IDs=pd.DataFrame()
 
+
+playlist_IDs=pd.DataFrame()
 
 
 #-----------THIS IS TEST WORK---------------#
@@ -198,6 +199,8 @@ def TEST():
 
 def Artists_to_DB():
 
+
+	playlist_IDs=pd.DataFrame()
 
 	#-----------------------------------------------------------------------------------#
 	#---------GET PLAYLIST IDS FROM MANUALLY GATHERED SPOTIFY PLAYLIST TABLE------------#

@@ -10,9 +10,8 @@
 #----------LAST UPDATED ON 4/28/2019------------------#
 #-----------------------------------------------------#
 
-
-import mysql
-from mysql.connector import Error
+#import mysql
+#from mysql.connector import Error
 import psycopg2 as p
 import json
 from dateutil import parser
@@ -24,9 +23,17 @@ import urllib.request
 import pandas as pd
 import unidecode
 from unidecode import unidecode
-import MySQLdb
-import sqlalchemy
+import requests
+import urllib
+from urllib import parse
+import sys
+import base64
+import numpy as np
+#import mysql-python
+import pymysql
+import base64
 import datetime
+from datetime import datetime
 
 
 #--------------------------------------------------------------------#
@@ -44,13 +51,15 @@ size = '20'
 #----------------------------------------------------------------------#
 #---------------------GET ARTIST LIST FROM MYSQL DB--------------------#
 #----------------------------------------------------------------------#
-def Data_Fetch():
+def Data_Fetch_pymysql():
 
-	test_db = pd.read_csv("C:/Users/whjac/Desktop/Ticket Flipping/Event_Ticket_Pricing/Data/test.csv")
+	test_db = pd.read_csv("C:/Users/wjack/Desktop/Event_Ticket_Pricing/Event_Ticket_Pricing/Data/test.csv")
 
 	Fetch_QL = 'SELECT * FROM ARTISTS_ONLY;'
 
-	connection=MySQLdb.connect('ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', 'tickets_user', 'tickets_pass', 'tickets_db')
+    #USING pymysql#
+	connection = pymysql.connect (host = 'ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', user = 'tickets_user', password = 'tickets_pass', db = 'tickets_db')
+    			
 	cursor=connection.cursor()
 
 	cursor.execute(Fetch_QL)
@@ -95,11 +104,10 @@ def EVENT_IDs (df):
 	for artist in artists:
 	
 	
-		#--------------TRY PULLING EVENT IDs, EXCEPT WHEN NO EVENTS APPEAR FOR AN ARTIST NAME-----------#
+	#--------------TRY PULLING EVENT IDs, EXCEPT WHEN NO EVENTS APPEAR FOR AN ARTIST NAME-----------#
 
-			try: 
-			
-			
+		try: 
+
 			#---------------------BUILD URL ACCESS STRING---------------------#
 			artist_encode = artist.encode('utf-8')
 			artist_decode = unidecode(str(artist_encode, encoding = "utf-8"))			
@@ -108,9 +116,7 @@ def EVENT_IDs (df):
 			print(access_string)
 			
 
-			#-----------------------------------------------------------------#
 			#--------------SUBMIT REQUEST TO URL, GET JSON RESPONSE-----------#
-			#-----------------------------------------------------------------#
 			raw_Dat = urllib.request.urlopen(access_string)			
 			encoded_Dat = raw_Dat.read().decode('utf-8', 'ignore')			
 			json_Dat = json.loads(encoded_Dat)
@@ -130,14 +136,14 @@ def EVENT_IDs (df):
 				event_ID_df = event_ID_df.append(each_event_ID)
 			
 			#----------WAIT TWO SECONDS BEFORE SUBMITTING NEXT QUERY TO AVOID OVERLOADING API-----------#
-			time.sleep(2)
+			time.sleep(5)
 		
 		#----------THROW EXCEPTION WHEN NO EVENTS EXIST FOR AN ARTIST-----------#
 		except KeyError as No_Events:
 		
 			print('No Events for this Artist!')
 			
-	print(event_ID_df)
+	#print(event_ID_df)
 
 	#----------RETURN THE ID DATAFRAME FOR USE WITH MAIN FUNCTION--------------#
 	return event_ID_df
@@ -145,9 +151,6 @@ def EVENT_IDs (df):
 
 #--------SAMPLE EVENT URL FOR TESTING PURPOSES----------#
 sample_event_url = ('https://app.ticketmaster.com/discovery/v2/events/1AKZA_YGkd7zQGw.json?apikey=OrCBYA46Xdvtl7RFfU88egw4L8HDPRW3')
-
-
-
 
 
 
@@ -160,7 +163,7 @@ def EVENT_DETAILS():
 
 
 	#---------SELECT A SMALL SUBSET OF THE ARTIST DATAFRAME----------#
-	Test = Data_Fetch().head(10)
+	Test = Data_Fetch_pymysql().head(10)
 	print(Test)
 
 	#-----------SELECT ARTISTS COLUMN FROM ARTISTS DATAFRAME---------#
@@ -173,12 +176,12 @@ def EVENT_DETAILS():
 	event_df = pd.DataFrame()
 	
 	#------EXTRACT INFORMATION FOR EACH EVENT, USING EVENT IDs GENERATED EARLIER------#
-	for event_ID in IDs:
+	for event_id in IDs:
 	
 		#--------------BUILD URL FOR EACH SPECIFIC QUERY---------------#
 		event_base_url = ('https://app.ticketmaster.com/discovery/v2/events/')
 		api_key = ('.json?apikey=OrCBYA46Xdvtl7RFfU88egw4L8HDPRW3')
-		event_url = (event_base_url + event_ID + api_key)
+		event_url = (event_base_url + event_id + api_key)
 		print(event_url)
 	
 	
@@ -192,6 +195,12 @@ def EVENT_DETAILS():
 		#-----EXTRACT VARIABLES OF INTEREST FROM JSON OBJECTS-----------#
 		#-----------HANDLE EXCEPTIONS FOR MISSING VALUES----------------#
 		#---------------------------------------------------------------#
+		
+		try:
+			event_name = json_Dat['name']
+		except KeyError as noName:
+			event_name = ''
+		
 		try: 
 			event_venue = json_Dat['_embedded']['venues'][0]['name']
 		except KeyError as noVenue:
@@ -201,38 +210,56 @@ def EVENT_DETAILS():
 			event_city = json_Dat['_embedded']['venues'][0]['city']['name']
 		except KeyError as noCity:
 			event_city = ' '
-			
+
 		try:
-			event_dates= json_Dat['dates']
-		except KeyError as noDate:
-			event_dates = ''
-			
+			event_state = json_Dat['_embedded']['venues'][0]['state']['name']
+		except KeyError as noState:
+			event_state = ' '
+
+		try:
+			event_date_Local = json_Dat['dates']['start']['localDate']
+		except KeyError as noEventDate:
+			event_date_Local = ' '
+
+		try:
+			event_time_Local = json_Dat['dates']['start']['localTime']
+		except KeyError as noEventTime:
+			event_time_Local = ' '
+
+		try:
+			event_TZ = json_Dat['dates']['timezone']
+		except KeyError as noTZ:
+			event_TZ = ' '
+
 		try:
 			event_sales = json_Dat['sales']
 		except KeyError as noSales:
 			event_sales = ''
-			
-		try:
-			event_name = json_Dat['name']
-		except KeyError as noName:
-			event_name = ''
-		
-		try:
-			event_start_date = json_Dat['dates']['start']['localDate']
-		
-		except KeyError as noStartDate:
-			event_start_date = ' '
-		
+
 		try: 
 			event_sale_start = json_Dat['sales']['public']['startDateTime']
 		except KeyError as noSaleStart:
 			event_sale_start = ' '
-			
+
 		try:
 			event_lowest_price = json_Dat['priceRanges'][0]['min']
 		except KeyError as noPriceDat:
 			event_lowest_price = ''
 			
+		
+		
+		event_array = pd.DataFrame([[event_name, event_id, event_venue, event_city, event_state, event_date_Local, event_time_Local, event_TZ, highest_price, capacity, sold_out_indicator, shareable, available_elsewhere]], 
+			columns =['name', 'ID', 'venue', 'city', 'state', 'date_UTC', 'lowest_price', 'highest_price', 'capacity', 'sold_out_indicator', 'shareable', 'available_elsewhere'])
+		
+
+		#insert_tuple = (event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, capacity, sold_out_indicator, shareable, available_elsewhere, current_Date)
+			
+		#print(insert_tuple)
+					
+		#event_QL = 'INSERT INTO `EVENTBRITE_EVENTS` (`name`, `id`, `venue`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `capacity`, `sold_out`, `shareable`, `available_elsewhere`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'                       
+
+		
+		
 		
 		
 		#-------CREATE A TEMPORARY DATAFRAME FOR EACH EVENT----------#
@@ -247,19 +274,17 @@ def EVENT_DETAILS():
 
 		
 		#----------CONNECT TO DB AND SUBMIT SQL QUERY------------#
-		connection=MySQLdb.connect('ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', 'tickets_user', 'tickets_pass', 'tickets_db')
+		connection=pymysql.connect(host = 'ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', user = 'tickets_user', password = 'tickets_pass', db = 'tickets_db')
 		cursor=connection.cursor()
 		cursor.execute(TestQL)
 		connection.commit()	
 								
-
-			
+	
 		#-------APPEND EACH EVENT TO MASTER DATAFRAME...NOT SURE IF I STILL NEED THIS------#
 		event_df = event_df.append(event_profile)
 		
-		
 		#---WAIT TWO SECONDS TO AVOID OVERLOADING API-----#
-		time.sleep(2)
+		time.sleep(5)
 			
 	#---------EXPORT AGGREGATE EVENT DATAFRAME TO CSV---------#
 	#event_df.to_csv('C:/Users/whjac/Desktop/Ticket Flipping/Event_Ticket_Pricing/Data/Ticketmaster_event_list.csv', index=False)

@@ -10,8 +10,8 @@
 #----------LAST UPDATED ON 4/28/2019------------------#
 #-----------------------------------------------------#
 
-import mysql
-from mysql.connector import Error
+#import mysql
+#from mysql.connector import Error
 import psycopg2 as p
 import json
 from dateutil import parser
@@ -23,18 +23,20 @@ import urllib.request
 import pandas as pd
 import unidecode
 from unidecode import unidecode
-import spotipy
-from spotipy.oauth2 import SpotifyClientCredentials
-from spotipy.client import Spotify
 import requests
 import urllib
 from urllib import parse
 import sys
 import base64
 import numpy as np
+#import mysql-python
+import pymysql
+import base64
+import datetime
+from datetime import datetime
 import fuzzywuzzy
 from fuzzywuzzy import fuzz
-import MySQLdb
+
 
 
 #------------------------------------------------------------------#
@@ -51,7 +53,7 @@ base_string = "https://www.eventbriteapi.com/v3/events/search/?token=ZG7IKNHFJFF
 #--------------------------------------------------------------------#
 #-----------------STATIC DATA LOCATION PULL FOR TESTING--------------#
 #--------------------------------------------------------------------#
-test_db = pd.read_csv("C:/Users/whjac/Desktop/Ticket Flipping/Event_Ticket_Pricing/Data/test.csv")
+test_db = pd.read_csv("C:/Users/wjack/Desktop/Event_Ticket_Pricing/Event_Ticket_Pricing/Data/test.csv")
 sample = test_db.head(3)
 
 
@@ -63,7 +65,7 @@ def Data_Fetch():
 
 	Fetch_QL = 'SELECT * FROM ARTISTS_ONLY;'
 
-	connection=MySQLdb.connect('ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', 'tickets_user', 'tickets_pass', 'tickets_db')
+	connection = pymysql.connect (host = 'ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', user = 'tickets_user', password = 'tickets_pass', db = 'tickets_db')
 	cursor=connection.cursor()
 
 	cursor.execute(Fetch_QL)
@@ -141,8 +143,9 @@ def EventBrite_Artist_Search(df):
 	sample = df.head(3)
 	artists = sample['artist']
 	
-	#-----------SELECT ARTISTS COLUMN FROM ARTISTS DATAFRAME---------#
-	#artists = df['Artist']
+    #-----------GET CURRENT DATETIME FOR TIMESTAMP ADD------------#
+	current_Date = datetime.now()
+    #current_Date = 'TEST'
 	
 	#--------------------LOOP THRU ARTISTS--------------------#
 	for artist in artists:
@@ -173,12 +176,13 @@ def EventBrite_Artist_Search(df):
 			try:
 			
 				#--------FIRST, EXTRACT EVENT NAME AND ELIMINATE SQL ESCAPE CHARACTERS-------#
-				name = (event['name']['text']).replace('"', '')
-				
+				event_name = ((event['name']['text']).replace('"', '')).encode('utf-8')
+				name_decode = unidecode(str(event_name, encoding="utf-8")).replace('"', '')
+				print(name_decode)
 				
 				#------AVOID PULLING BACK TOO MANY EVENTS BY FUZZY MATCHING SPOTIFY NAME TO EVENTBRITE NAMES------#
 				Spotify_name = artist
-				EventBrite_name = name
+				EventBrite_name = event_name
 				
 				#-----------TEST OUT FUZZY LEVENSHEN FUNCTION-----------#
 				#Distance = levenshtein_ratio_and_distance(Spotify_name, EventBrite_name)
@@ -195,49 +199,48 @@ def EventBrite_Artist_Search(df):
 				#----------ONLY CONTINUE EXTRACTING EVENT DATA IF FUZZY PARTIAL SCORE > .75...IDK--------#
 				
 				if fuzz_partial > 75:
-	
+				
+
 					#-----------INDIVIDUAL VARIABLE EXTRACTION------------#
-					id = event['id']
-					start = event['start']['utc']
-					end = event['end']['utc']
-					capacity = event['capacity']
-					listed = event['listed']
-					shareable = event['shareable']
-					venue_id = event['venue_id']
-		
-					venue_state = event['venue']['address']['region']
-					venue_city = event['venue']['address']['city']
-					
-					minimum_price = event['ticket_availability']['minimum_ticket_price']['major_value']
-					maximum_price = event['ticket_availability']['maximum_ticket_price']['major_value']
+					event_id = event['id']
+					event_venue = event['venue']['name']
+					event_city = event['venue']['address']['city']
+					event_state = event['venue']['address']['region']
+					event_date_UTC = event['start']['utc']
+					lowest_price = event['ticket_availability']['minimum_ticket_price']['major_value']
+					highest_price = event['ticket_availability']['maximum_ticket_price']['major_value']
+					capacity = event['venue']['capacity']
+
 					sold_out_indicator = event['ticket_availability']['is_sold_out']
-					available_elsewhere = event['is_externally_ticketed']
-				
-				
-					#-------CREATE A TEMPORARY DATAFRAME FOR EACH EVENT----------#
-					event_profile=pd.DataFrame([[name, id, start, end, capacity, listed, shareable, venue_id, venue_state, venue_city, minimum_price, maximum_price, sold_out_indicator, available_elsewhere]], 
-						columns=['event_name', 'event_id', 'event_start', 'event_end', 'event_capacity', 'listed', 'shareable', 'venue_id', 'venue_state', 'venue_city', 'minimum_price', 'maximum_price', 'sold_out_indicator', 'available_elsewhere'])	
-					
-					
-					#------------SQL TIME - SUBSTITUTE STRINGS INTO SQL QUERY FOR DB SUBMISSION-------------#
-					
-					TestQL = 'INSERT INTO EVENTBRITE_Test(event_name, event_id, event_start, event_end, event_capacity, event_listed, event_shareable, venue_id, venue_state, venue_city, minimum_price, maximum_price, sold_out, available_elsewhere) \
-								VALUES ("%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s");' %(name, id, start, end, capacity, listed, shareable, venue_id, venue_state, venue_city, minimum_price, maximum_price, sold_out_indicator, available_elsewhere)
+					shareable = event['shareable']
+					available_elsewhere = event['is_externally_ticketed']				
 
-					print(TestQL)
-					
+					#listed = event['listed']
+
+					#venue_id = event['venue_id']
+
+					event_array = pd.DataFrame([[event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, capacity, sold_out_indicator, shareable, available_elsewhere]], 
+						columns =['name', 'ID', 'venue', 'city', 'state', 'date_UTC', 'lowest_price', 'highest_price', 'capacity', 'sold_out_indicator', 'shareable', 'available_elsewhere'])
+    				
+
+					insert_tuple = (event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, capacity, sold_out_indicator, shareable, available_elsewhere, current_Date)
+						
+					print(insert_tuple)
+								
+					event_QL = 'INSERT INTO `EVENTBRITE_EVENTS` (`name`, `id`, `venue`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `capacity`, `sold_out`, `shareable`, `available_elsewhere`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'                       
+
+
 					#----------CONNECT TO DB AND SUBMIT SQL QUERY------------#
-					connection=MySQLdb.connect('ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', 'tickets_user', 'tickets_pass', 'tickets_db')
+					connection=	connection = pymysql.connect (host = 'ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', user = 'tickets_user', password = 'tickets_pass', db = 'tickets_db')
 					cursor=connection.cursor()
-
-					cursor.execute(TestQL)
-					#data=cursor.fetchall()
-					connection.commit()				
-
 					
-					
+					print(event_QL)
+					result  = cursor.execute(event_QL, insert_tuple)	
+					connection.commit()					
+							
+
 					#-------APPEND EACH EVENT TO MASTER DATAFRAME...NOT SURE IF I STILL NEED THIS------#
-					event_df = event_df.append(event_profile)
+					event_df = event_df.append(event_array)
 					
 			
 			#------------SINCE INSTANCES OF NO-DATA SEEMS RARE IN EVENTBITE, JUST SKIP RECORD ENTIRELY----------#
@@ -251,11 +254,11 @@ def EventBrite_Artist_Search(df):
 		
 		#----------EXPORT THE PANDAS DFs----------#
 		
-		event_df.to_csv('C:/Users/whjac/Desktop/Ticket Flipping/Event_Ticket_Pricing/Data/EventBrite_Sample_Fuzzy.csv', index = False, encoding = 'utf-8')
+		event_df.to_csv('C:/Users/wjack/Desktop/Event_Ticket_Pricing/Event_Ticket_Pricing/Data/EventBrite_Sample_Fuzzy.csv', index = False, encoding = 'utf-8')
 			
 		
 #---------------------------------------------------#
 #---------------CALL MAIN FUNCTION------------------#	
 #---------------------------------------------------#	
-EventBrite_Artist_Search(test_db)
+EventBrite_Artist_Search(Data_Fetch())
 
