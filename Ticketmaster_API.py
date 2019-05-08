@@ -34,6 +34,7 @@ import pymysql
 import base64
 import datetime
 from datetime import datetime
+import pytz
 
 
 #--------------------------------------------------------------------#
@@ -163,7 +164,7 @@ def EVENT_DETAILS():
 
 
     #---------SELECT A SMALL SUBSET OF THE ARTIST DATAFRAME----------#
-    Test = Data_Fetch_pymysql().head(2)
+    Test = Data_Fetch_pymysql().head(4)
     print(Test)
 
 	#----------CONNECT TO DB AND SUBMIT SQL QUERY------------#
@@ -194,8 +195,7 @@ def EVENT_DETAILS():
         raw_Data=urllib.request.urlopen(event_url)
         encoded_Dat = raw_Data.read().decode('utf-8', 'ignore')			
         json_Dat = json.loads(encoded_Dat)
-                
-        print(json_Dat)
+
 		
         #---------------------------------------------------------------#
         #-----EXTRACT VARIABLES OF INTEREST FROM JSON OBJECTS-----------#
@@ -205,21 +205,25 @@ def EVENT_DETAILS():
             event_name = json_Dat['name']
         except KeyError as noName:
             event_name = ''
-		
+        print(event_name)
+        
         try: 
             event_venue = json_Dat['_embedded']['venues'][0]['name']
         except KeyError as noVenue:
             event_venue=' '
+        print(event_venue)
 			
         try:
             event_city = json_Dat['_embedded']['venues'][0]['city']['name']
         except KeyError as noCity:
             event_city = ' '
+        print(event_city)
 
         try:
             event_state = json_Dat['_embedded']['venues'][0]['state']['name']
         except KeyError as noState:
             event_state = ' '
+        print(event_state)
 
         try:
             event_date_Local = json_Dat['dates']['start']['localDate']
@@ -230,43 +234,58 @@ def EVENT_DETAILS():
             event_time_Local = json_Dat['dates']['start']['localTime']
         except KeyError as noEventTime:
             event_time_Local = ' '
-
+            
+        event_datetime_Local = (event_date_Local + " " + event_time_Local)
+        
         try:
-            event_TZ = json_Dat['dates']['timezone']
+            TZ_string = json_Dat['dates']['timezone']
+            event_TZ = pytz.timezone(TZ_string)
+            try:
+            
+                basic_event_Date = datetime.strptime (event_datetime_Local, "%Y-%m-%d %H:%M:%S")
+                print(basic_event_Date)
+                print(event_TZ)
+                local_dt = event_TZ.localize(basic_event_Date, is_dst=None)
+                event_date = local_dt.astimezone(pytz.utc)
+            except ValueError as missing_datetime:
+                event_date = " "
         except KeyError as noTZ:
-            event_TZ = ' '
+            event_TZ = '?'
+            event_date = (event_datetime_Local)
+        print(event_date)
+    
 
         try: 
             event_sale_start = json_Dat['sales']['public']['startDateTime']
         except KeyError as noSaleStart:
             event_sale_start = ' '
+        print(event_sale_start)
 
         try:
             event_lowest_price = json_Dat['priceRanges'][0]['min']
         except KeyError as noPriceDat:
             event_lowest_price = ''
+        print(event_lowest_price)
 			
         try:
             event_highest_price = json_Dat['priceRanges'][0]['max']
         except KeyError as noPriceDat:
             event_highest_price = ''
+        print(event_highest_price)
 		
 
 		#-------CREATE A TEMPORARY DATAFRAME FOR EACH EVENT----------#
-        event_profile=pd.DataFrame([[event_name, event_id, event_venue, event_city, event_state, event_date_Local, event_time_Local, event_TZ, event_sale_start, event_lowest_price, event_highest_price]], 
-						columns=['attraction_name', 'event_id', 'venue', 'city', 'state', 'event_date', 'event_time', 'event_TZ', 'sale_start_date', 'event_lowest_price', 'event_highest_price'])	
-
+        event_profile=pd.DataFrame([[event_name, event_id, event_venue, event_city, event_state, event_date, TZ_string, event_sale_start, event_lowest_price, event_highest_price]], 
+		  			  columns=['attraction_name', 'event_id', 'venue', 'city', 'state', 'event_date', 'event_TZ', 'sale_start_date', 'event_lowest_price', 'event_highest_price'])	
         
-        insert_tuple = (event_name, event_id, event_venue, event_city, event_state, event_date_Local, event_time_Local, event_TZ, event_sale_start, event_lowest_price, event_highest_price, current_Date)
-
+        insert_tuple = (event_name, event_id, event_venue, event_city, event_state, event_date, TZ_string, event_sale_start, event_lowest_price, event_highest_price, current_Date)
         print(insert_tuple)
 
 		#------------SQL TIME - SUBSTITUTE STRINGS INTO SQL QUERY FOR DB SUBMISSION-------------#
-        event_QL = 'INSERT INTO TICKETMASTER_TABLE(name, id, vanue, city, state, date_local, time_local, time_zone, sale_start_date, lowest_price, highest_price, create_ts) VALUES ("%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s");' 
-
+        event_QL = 'INSERT INTO TICKETMASTER_EVENTS(name, id, venue, city, state, date, time_zone, sale_start, lowest_price, highest_price, create_ts) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);' 
         print(event_QL)
 
-        cursor.execute(event_QL)
+        result  = cursor.execute(event_QL, insert_tuple)
         connection.commit()	
 								
 		#-------APPEND EACH EVENT TO MASTER DATAFRAME...NOT SURE IF I STILL NEED THIS------#
