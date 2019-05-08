@@ -55,9 +55,9 @@ def Data_Fetch_pymysql():
                                   password = 'tickets_pass',
                                   db = 'tickets_db')
     
-    Fetch_QL = 'SELECT * FROM ARTISTS_ONLY;'
+    Fetch_QL = 'SELECT * FROM Artists_expanded;'
     cursor = connection.cursor()
-    Artists_DF = pd.read_sql('SELECT * FROM ARTISTS_ONLY_EXPANDED', con = connection)  
+    Artists_DF = pd.read_sql('SELECT * FROM Artists_expanded', con = connection)  
     print(Artists_DF)
     return Artists_DF
 
@@ -109,11 +109,17 @@ def Get_Event_IDs_pymysql():
     #current_Date = 'TEST'
 	
     #--------------------LOOP THRU ARTISTS--------------------#
-    for artist in artists:	
-	
+    #for artist in artists:	
+    for artist_dat in Test.iterrows():
+        
+        print(artist_dat)
+        
+        #-----------EXTRACT ARTIST FROM THE ROW------------------#
+        spotify_artist = artist_dat[1]['artist']
+        spotify_artist_id = artist_dat[1]['artist_id']
 	
         #---------ENCODE ARTIST NAMES IN HTML SYNTAX-----------#
-        artist_encode = artist.replace(" ", "%20")
+        artist_encode = spotify_artist.replace(" ", "%20")
     		
         #---------------------QUERY PARAMS---------------------#
         query_params = ("q=" + artist_encode + "&" + "rows=100")		
@@ -132,7 +138,6 @@ def Get_Event_IDs_pymysql():
         
         event_list = json_obj['events']
         
-        
         for event in event_list:
             
             event_name = event['name']
@@ -150,14 +155,14 @@ def Get_Event_IDs_pymysql():
             ticket_count = event['ticketInfo']['totalTickets']
             listing_count = event['ticketInfo']['totalListings']
             
-            event_array = pd.DataFrame([[event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count]], 
-                          columns =['name', 'ID', 'venue', 'city', 'state', 'date_UTC', 'lowest_price', 'highest_price', 'ticket_count', 'listing_count'])
+            event_array = pd.DataFrame([[spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count]], 
+                          columns =['artist', 'artist_id', 'name', 'ID', 'venue', 'city', 'state', 'date_UTC', 'lowest_price', 'highest_price', 'ticket_count', 'listing_count'])
     
-            insert_tuple = (event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count, current_Date)
+            insert_tuple = (spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count, current_Date)
     
             print(insert_tuple)
             
-            event_QL = 'INSERT INTO `STUBHUB_EVENTS` (`name`, `id`, `venue`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `ticket_count`, `listing_count`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'                       
+            event_QL = 'INSERT INTO `STUBHUB_EVENTS` (`artist`, `artist_id`, `name`, `id`, `venue`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `ticket_count`, `listing_count`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'                       
 
             print(event_QL)
             result  = cursor.execute(event_QL, insert_tuple)

@@ -53,8 +53,8 @@ base_string = "https://www.eventbriteapi.com/v3/events/search/?token=ZG7IKNHFJFF
 #--------------------------------------------------------------------#
 #-----------------STATIC DATA LOCATION PULL FOR TESTING--------------#
 #--------------------------------------------------------------------#
-test_db = pd.read_csv("C:/Users/wjack/Desktop/Event_Ticket_Pricing/Event_Ticket_Pricing/Data/test.csv")
-sample = test_db.head(3)
+#test_db = pd.read_csv("C:/Users/wjack/Desktop/Event_Ticket_Pricing/Event_Ticket_Pricing/Data/test.csv")
+#sample = test_db.head(3)
 
 
 
@@ -139,122 +139,122 @@ def levenshtein_ratio_and_distance(s, t, ratio_calc = False):
 
 def EventBrite_Artist_Search(df):
 
-	#---------SELECT A SMALL SUBSET OF THE ARTIST DATAFRAME----------#
-	sample = df.head(3)
-	artists = sample['artist']
+    #---------SELECT A SMALL SUBSET OF THE ARTIST DATAFRAME----------#
+    sample = df.head(3)
+    #artists = sample['artist']
 	
     #-----------GET CURRENT DATETIME FOR TIMESTAMP ADD------------#
-	current_Date = datetime.now()
+    current_Date = datetime.now()
     #current_Date = 'TEST'
 	
 	#--------------------LOOP THRU ARTISTS--------------------#
-	for artist in artists:
+    for artist_dat in sample.iterrows():
+        
+        spotify_artist = artist_dat[1]['artist']
+        spotify_artist_id = artist_dat[1]['artist_id']
 		
 		#---------ENCODE ARTIST NAMES IN HTML SYNTAX-----------#
-		artist_encode = artist.replace(" ", "%20")
+        artist_encode = spotify_artist.replace(" ", "%20")
 		
-		#---------BUILD THE URL TO REQUEST DATA FROM-----------#
-		artist_url = (base_string + "expand=ticket_availability,external_ticketing,venue&" + "q=" + artist_encode)
-		print(artist_url)
+        #---------BUILD THE URL TO REQUEST DATA FROM-----------#
+        artist_url = (base_string + "expand=ticket_availability,external_ticketing,venue&" + "q=" + artist_encode)
+        print(artist_url)
 		
-		#---------GET RAW RESPONSE FROM URL, DECODE IT TO JSON----------#
-		rawdat = urllib.request.urlopen(artist_url)
-		encoded_dat = rawdat.read().decode('utf-8', errors='ignore')
-		print(rawdat)
-		json_dat = json.loads(encoded_dat)
+        #---------GET RAW RESPONSE FROM URL, DECODE IT TO JSON----------#
+        rawdat = urllib.request.urlopen(artist_url)
+        encoded_dat = rawdat.read().decode('utf-8', errors='ignore')
+        print(rawdat)
+        json_dat = json.loads(encoded_dat)
 		
-		#---------------BEGIN BUILDING EVENTS DATAFRAME FROM JSON----------------#
-		#-----CREATE BLANK DATAFRAME FOR APPENDING, ISOLATE EVENTS FROM JSON-----#
-		event_df = pd.DataFrame()
-		events = json_dat['events']
+        #---------------BEGIN BUILDING EVENTS DATAFRAME FROM JSON----------------#
+        #-----CREATE BLANK DATAFRAME FOR APPENDING, ISOLATE EVENTS FROM JSON-----#
+        event_df = pd.DataFrame()
+        events = json_dat['events']
 		
-		#-----------LOOP THROUGH EVENTS IN EVENT LIST---------------#
-		for event in events:
+        #-----------LOOP THROUGH EVENTS IN EVENT LIST---------------#
+        for event in events:
 		
-			#----------TRY TO EXTRACT DATA FROM 'EVENTS' OBJECT IN JSON...EXCEPT WHEN NO DATA--------#
+            #----------TRY TO EXTRACT DATA FROM 'EVENTS' OBJECT IN JSON...EXCEPT WHEN NO DATA--------#
 			
-			try:
+            try:
 			
-				#--------FIRST, EXTRACT EVENT NAME AND ELIMINATE SQL ESCAPE CHARACTERS-------#
-				event_name = ((event['name']['text']).replace('"', '')).encode('utf-8')
-				name_decode = unidecode(str(event_name, encoding="utf-8")).replace('"', '')
-				print(name_decode)
+                #--------FIRST, EXTRACT EVENT NAME AND ELIMINATE SQL ESCAPE CHARACTERS-------#
+                event_name = ((event['name']['text']).replace('"', '')).encode('utf-8')
+                name_decode = unidecode(str(event_name, encoding="utf-8")).replace('"', '')
+                print(name_decode)
 				
-				#------AVOID PULLING BACK TOO MANY EVENTS BY FUZZY MATCHING SPOTIFY NAME TO EVENTBRITE NAMES------#
-				Spotify_name = artist
-				EventBrite_name = event_name
+                #------AVOID PULLING BACK TOO MANY EVENTS BY FUZZY MATCHING SPOTIFY NAME TO EVENTBRITE NAMES------#
+                Spotify_name = spotify_artist
+                EventBrite_name = event_name
 				
-				#-----------TEST OUT FUZZY LEVENSHEN FUNCTION-----------#
-				#Distance = levenshtein_ratio_and_distance(Spotify_name, EventBrite_name)
-				#print(Distance)
-				#Ratio = levenshtein_ratio_and_distance(Spotify_name, EventBrite_name,ratio_calc = True)
-				#print(Ratio)
-				
-
-				#----------TEST OUT FUZZYWUZZY FUNCTION-----------------#
-				fuzz_partial = fuzz.partial_ratio(Spotify_name.lower(), EventBrite_name.lower())
-				print(fuzz_partial)
-
-				
-				#----------ONLY CONTINUE EXTRACTING EVENT DATA IF FUZZY PARTIAL SCORE > .75...IDK--------#
-				
-				if fuzz_partial > 75:
+                #-----------TEST OUT FUZZY LEVENSHEN FUNCTION-----------#
+                #Distance = levenshtein_ratio_and_distance(Spotify_name, EventBrite_name)
+                #print(Distance)
+                #Ratio = levenshtein_ratio_and_distance(Spotify_name, EventBrite_name,ratio_calc = True)
+                #print(Ratio)
 				
 
-					#-----------INDIVIDUAL VARIABLE EXTRACTION------------#
-					event_id = event['id']
-					event_venue = event['venue']['name']
-					event_city = event['venue']['address']['city']
-					event_state = event['venue']['address']['region']
-					event_date_UTC = event['start']['utc']
-					lowest_price = event['ticket_availability']['minimum_ticket_price']['major_value']
-					highest_price = event['ticket_availability']['maximum_ticket_price']['major_value']
-					capacity = event['venue']['capacity']
+                #----------TEST OUT FUZZYWUZZY FUNCTION-----------------#
+                fuzz_partial = fuzz.partial_ratio(Spotify_name.lower(), EventBrite_name.lower())
+                print(fuzz_partial)
 
-					sold_out_indicator = event['ticket_availability']['is_sold_out']
-					shareable = event['shareable']
-					available_elsewhere = event['is_externally_ticketed']				
+				
+                #----------ONLY CONTINUE EXTRACTING EVENT DATA IF FUZZY PARTIAL SCORE > .75...IDK--------#
+				
+                if fuzz_partial > 75:
+				
 
-					#listed = event['listed']
+                    #-----------INDIVIDUAL VARIABLE EXTRACTION------------#
+                    event_id = event['id']
+                    event_venue = event['venue']['name']
+                    event_city = event['venue']['address']['city']
+                    event_state = event['venue']['address']['region']
+                    event_date_UTC = event['start']['utc']
+                    lowest_price = event['ticket_availability']['minimum_ticket_price']['major_value']
+                    highest_price = event['ticket_availability']['maximum_ticket_price']['major_value']
+                    capacity = event['venue']['capacity']
 
-					#venue_id = event['venue_id']
+                    sold_out_indicator = event['ticket_availability']['is_sold_out']
+                    shareable = event['shareable']
+                    available_elsewhere = event['is_externally_ticketed']				
 
-					event_array = pd.DataFrame([[event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, capacity, sold_out_indicator, shareable, available_elsewhere]], 
-						columns =['name', 'ID', 'venue', 'city', 'state', 'date_UTC', 'lowest_price', 'highest_price', 'capacity', 'sold_out_indicator', 'shareable', 'available_elsewhere'])
+                    #listed = event['listed']
+
+                    #venue_id = event['venue_id']
+
+                    event_array = pd.DataFrame([[spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, capacity, sold_out_indicator, shareable, available_elsewhere]], 
+                                               columns =['artist', 'artist_id', 'name', 'ID', 'venue', 'city', 'state', 'date_UTC', 'lowest_price', 'highest_price', 'capacity', 'sold_out_indicator', 'shareable', 'available_elsewhere'])
     				
 
-					insert_tuple = (event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, capacity, sold_out_indicator, shareable, available_elsewhere, current_Date)
+                    insert_tuple = (spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, capacity, sold_out_indicator, shareable, available_elsewhere, current_Date)
 						
-					print(insert_tuple)
+                    print(insert_tuple)
 								
-					event_QL = 'INSERT INTO `EVENTBRITE_EVENTS` (`name`, `id`, `venue`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `capacity`, `sold_out`, `shareable`, `available_elsewhere`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'                       
+                    event_QL = 'INSERT INTO `EVENTBRITE_EVENTS` (`artist`, `artist_id`, `name`, `id`, `venue`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `capacity`, `sold_out`, `shareable`, `available_elsewhere`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'                       
 
 
-					#----------CONNECT TO DB AND SUBMIT SQL QUERY------------#
-					connection=	connection = pymysql.connect (host = 'ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', user = 'tickets_user', password = 'tickets_pass', db = 'tickets_db')
-					cursor=connection.cursor()
+                    #----------CONNECT TO DB AND SUBMIT SQL QUERY------------#
+                    connection=	connection = pymysql.connect (host = 'ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', user = 'tickets_user', password = 'tickets_pass', db = 'tickets_db')
+                    cursor=connection.cursor()
 					
-					print(event_QL)
-					result  = cursor.execute(event_QL, insert_tuple)	
-					connection.commit()					
+                    print(event_QL)
+                    result  = cursor.execute(event_QL, insert_tuple)	
+                    connection.commit()					
 							
 
-					#-------APPEND EACH EVENT TO MASTER DATAFRAME...NOT SURE IF I STILL NEED THIS------#
-					event_df = event_df.append(event_array)
+                    #-------APPEND EACH EVENT TO MASTER DATAFRAME...NOT SURE IF I STILL NEED THIS------#
+                    event_df = event_df.append(event_array)
 					
 			
-			#------------SINCE INSTANCES OF NO-DATA SEEMS RARE IN EVENTBITE, JUST SKIP RECORD ENTIRELY----------#
-			except TypeError as no_data:
+            #------------SINCE INSTANCES OF NO-DATA SEEMS RARE IN EVENTBITE, JUST SKIP RECORD ENTIRELY----------#
+            except TypeError as no_data:
 			
-				print ('One of the fields was missing')
-			
-			
-		print(artist)
+                print ('One of the fields was missing')
 
 		
-		#----------EXPORT THE PANDAS DFs----------#
+        #----------EXPORT THE PANDAS DFs----------#
 		
-		event_df.to_csv('C:/Users/wjack/Desktop/Event_Ticket_Pricing/Event_Ticket_Pricing/Data/EventBrite_Sample_Fuzzy.csv', index = False, encoding = 'utf-8')
+        #event_df.to_csv('C:/Users/wjack/Desktop/Event_Ticket_Pricing/Event_Ticket_Pricing/Data/EventBrite_Sample_Fuzzy.csv', index = False, encoding = 'utf-8')
 			
 		
 #---------------------------------------------------#

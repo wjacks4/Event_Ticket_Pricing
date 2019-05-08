@@ -93,61 +93,59 @@ print(request)
 def EVENT_IDs (df):
 
 
-	#----------ISOLATE ARTIST COLUMN FROM INPUT DATASET-------#
-	
-	artists = df['artist']
-
-	#-----------------CREATE BLANK DATAFRAME FOR APPENDING-------------------#
-	event_ID_df = pd.DataFrame()
+    #-----------------CREATE BLANK DATAFRAME FOR APPENDING-------------------#
+    event_ID_df = pd.DataFrame()
 	
 	
-	#----------LOOP THROUGH ARTISTS IN COLUMN FROM INPUT DATAFRAME-----------#
-	for artist in artists:
+    #----------LOOP THROUGH ARTISTS IN COLUMN FROM INPUT DATAFRAME-----------#
+    for artist_dat in df.iterrows():
 	
+        spotify_artist = artist_dat[1]['artist']
+        spotify_artist_id = artist_dat[1]['artist_id']
 	
 	#--------------TRY PULLING EVENT IDs, EXCEPT WHEN NO EVENTS APPEAR FOR AN ARTIST NAME-----------#
 
-		try: 
+        try: 
 
-			#---------------------BUILD URL ACCESS STRING---------------------#
-			artist_encode = artist.encode('utf-8')
-			artist_decode = unidecode(str(artist_encode, encoding = "utf-8"))			
-			artist_keyword = artist_decode.replace(" ", "+")		
-			access_string = (event_search_url + artist_keyword)
-			print(access_string)
+            #---------------------BUILD URL ACCESS STRING---------------------#
+            artist_encode = spotify_artist.encode('utf-8')
+            artist_decode = unidecode(str(artist_encode, encoding = "utf-8"))			
+            artist_keyword = artist_decode.replace(" ", "+")		
+            access_string = (event_search_url + artist_keyword)
+            print(access_string)
 			
 
-			#--------------SUBMIT REQUEST TO URL, GET JSON RESPONSE-----------#
-			raw_Dat = urllib.request.urlopen(access_string)			
-			encoded_Dat = raw_Dat.read().decode('utf-8', 'ignore')			
-			json_Dat = json.loads(encoded_Dat)
+            #--------------SUBMIT REQUEST TO URL, GET JSON RESPONSE-----------#
+            raw_Dat = urllib.request.urlopen(access_string)			
+            encoded_Dat = raw_Dat.read().decode('utf-8', 'ignore')			
+            json_Dat = json.loads(encoded_Dat)
 			
-			#----------ISOLATE EVENT OBJECT FROM JSON RESPONSE----------------#
-			event_Dat = json_Dat['_embedded']['events']		
+            #----------ISOLATE EVENT OBJECT FROM JSON RESPONSE----------------#
+            event_Dat = json_Dat['_embedded']['events']		
 			
-			#-------------EXTRACT EVENT ID FROM DATA IN EACH MEMBER OF EVENT OBJECT-----------#
-			for event in event_Dat:
-				name = event['name']
-				id = event['id']
+            #-------------EXTRACT EVENT ID FROM DATA IN EACH MEMBER OF EVENT OBJECT-----------#
+            for event in event_Dat:
+                name = event['name']
+                event_id = event['id']
 				
-				#-------------CREATE TEMPORARY DATAFRAME FOR EACH EVENT ID--------------------#
-				each_event_ID = pd.DataFrame([[name, id]], columns=['attraction_name', 'ID'])
+                #-------------CREATE TEMPORARY DATAFRAME FOR EACH EVENT ID--------------------#
+                each_event_ID = pd.DataFrame([[spotify_artist, spotify_artist_id, name, event_id]], columns=['artist_name', 'artist_id', 'attraction_name', 'event_id'])
 			
-				#----------------APPEND TEMPORARY DATAFRAME ONTO MASTER DF--------------------#
-				event_ID_df = event_ID_df.append(each_event_ID)
+                #----------------APPEND TEMPORARY DATAFRAME ONTO MASTER DF--------------------#
+                event_ID_df = event_ID_df.append(each_event_ID)
 			
-			#----------WAIT TWO SECONDS BEFORE SUBMITTING NEXT QUERY TO AVOID OVERLOADING API-----------#
-			time.sleep(5)
+            #----------WAIT TWO SECONDS BEFORE SUBMITTING NEXT QUERY TO AVOID OVERLOADING API-----------#
+            time.sleep(5)
 		
-		#----------THROW EXCEPTION WHEN NO EVENTS EXIST FOR AN ARTIST-----------#
-		except KeyError as No_Events:
+        #----------THROW EXCEPTION WHEN NO EVENTS EXIST FOR AN ARTIST-----------#
+        except KeyError as No_Events:
 		
-			print('No Events for this Artist!')
+            print('No Events for this Artist!')
 			
-	#print(event_ID_df)
+    #print(event_ID_df)
 
-	#----------RETURN THE ID DATAFRAME FOR USE WITH MAIN FUNCTION--------------#
-	return event_ID_df
+    #----------RETURN THE ID DATAFRAME FOR USE WITH MAIN FUNCTION--------------#
+    return event_ID_df
 	
 
 #--------SAMPLE EVENT URL FOR TESTING PURPOSES----------#
@@ -172,7 +170,7 @@ def EVENT_DETAILS():
     cursor=connection.cursor()
 	
     #--------FEED THE RESULT OF THE DATA FETCH FUNCTION INTO THE EVENT_ID FUNCTION------------#
-    IDs = EVENT_IDs(Test)['ID']
+    IDs_df = EVENT_IDs(Test)
 	
     #--------------CREATE EMPTY EVENT DATAFRAME TO APPEND DATA ON TO LATER----------------#
     event_df = pd.DataFrame()
@@ -182,7 +180,13 @@ def EVENT_DETAILS():
     #current_Date = 'TEST'
     
     #------EXTRACT INFORMATION FOR EACH EVENT, USING EVENT IDs GENERATED EARLIER------#
-    for event_id in IDs:
+    for IDs_dat in IDs_df.iterrows():
+        
+        print(IDs_dat)
+        
+        event_id = IDs_dat[1]['event_id']
+        spotify_artist = IDs_dat[1]['artist_name']
+        spotify_artist_id = IDs_dat[1]['artist_id']
 
         #--------------BUILD URL FOR EACH SPECIFIC QUERY---------------#
         event_base_url = ('https://app.ticketmaster.com/discovery/v2/events/')
@@ -275,14 +279,14 @@ def EVENT_DETAILS():
 		
 
 		#-------CREATE A TEMPORARY DATAFRAME FOR EACH EVENT----------#
-        event_profile=pd.DataFrame([[event_name, event_id, event_venue, event_city, event_state, event_date, TZ_string, event_sale_start, event_lowest_price, event_highest_price]], 
-		  			  columns=['attraction_name', 'event_id', 'venue', 'city', 'state', 'event_date', 'event_TZ', 'sale_start_date', 'event_lowest_price', 'event_highest_price'])	
+        event_profile=pd.DataFrame([[spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date, TZ_string, event_sale_start, event_lowest_price, event_highest_price]], 
+		  			  columns=['artist', 'artist_id', 'attraction_name', 'event_id', 'venue', 'city', 'state', 'event_date', 'event_TZ', 'sale_start_date', 'event_lowest_price', 'event_highest_price'])	
         
-        insert_tuple = (event_name, event_id, event_venue, event_city, event_state, event_date, TZ_string, event_sale_start, event_lowest_price, event_highest_price, current_Date)
+        insert_tuple = (spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date, TZ_string, event_sale_start, event_lowest_price, event_highest_price, current_Date)
         print(insert_tuple)
 
 		#------------SQL TIME - SUBSTITUTE STRINGS INTO SQL QUERY FOR DB SUBMISSION-------------#
-        event_QL = 'INSERT INTO TICKETMASTER_EVENTS(name, id, venue, city, state, date, time_zone, sale_start, lowest_price, highest_price, create_ts) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);' 
+        event_QL = 'INSERT INTO TICKETMASTER_EVENTS(artist, artist_id, name, id, venue, city, state, date, time_zone, sale_start, lowest_price, highest_price, create_ts) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);' 
         print(event_QL)
 
         result  = cursor.execute(event_QL, insert_tuple)

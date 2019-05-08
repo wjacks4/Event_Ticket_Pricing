@@ -89,20 +89,14 @@ def Playlist_Artists(user_in, ID_in):
 	raw_dat = spotify.user_playlist_tracks(user = user_in, playlist_id = ID_in)
 	song_list = raw_dat['items']
 	
-	#--------------------------------------------------#
 	#----CREATE EMPTY DATAFRAME FOR APPENDING LATER----#
-	#--------------------------------------------------#
 	artist_df= pd.DataFrame()
 	
 	
-	#--------------------------------------------------------------#
 	#--------------LOOP THROUGH SONGS IN PLAYLIST------------------#
-	#--------------------------------------------------------------#
 	for song in song_list:
 		
-		#-------------------------------------------------------------------------------------#
 		#----TRY PULLING ARTIST INFO FOR EVERY SONG IN PLAYLIST, EXCEPT WHEN NO DATA EXISTS---#
-		#-------------------------------------------------------------------------------------#
 		try:
 		
 			#-------------------------------------------#
@@ -111,37 +105,27 @@ def Playlist_Artists(user_in, ID_in):
 			artists = song['track']['artists']
 			
 			
-			#--------------------------------------------------------------------------------------#
 			#----------PULL DETAILED ARTIST INFO FOR EVERY ARTIST ON EVERY TRACK IN PLAYLIST-------#
-			#--------------------------------------------------------------------------------------#
 			for artist in artists:
 				
 				artist_name = unidecode(str( (artist['name'].encode('utf-8')), encoding="utf-8"))
 				artist_ID = str(artist['uri']).replace('spotify:artist:', '')
 	
-				#----------------------------------------------------------------------------------#
 				#------USE SPOTIPY'S ARTIST SEARCH FUNCTION TO PULL POPULARITY INFO ON ARTIST------#
-				#----------------------------------------------------------------------------------#
 				artist_dat = spotify.artist(artist_id = artist_ID)
 				artist_followers = artist_dat['followers']['total']
 				artist_popularity = artist_dat['popularity']
 
-				#-------------------------------------------------------------#
 				#-------CREATE A TEMPORARY DATAFRAME FOR EACH ARTIST----------#
-				#-------------------------------------------------------------#
 				artist_array = pd.DataFrame([[artist_name, artist_ID, artist_followers, artist_popularity]], columns =['artist_name', 'artist_ID', 'artist_followers', 'artist_popularity'])
 
 				
-				#---------------------------------------------------#
 				#-------APPEND EACH ARTIST TO MASTER DATAFRAME------#
-				#---------------------------------------------------#
 				artist_df = artist_df.append(artist_array)
 		
 		
 		
-		#-----------------------------------------------------------------------#
 		#----------JUST ADD A BLANK ROW TO MASTER DF WHEN NO DATA EXISTS--------#
-		#-----------------------------------------------------------------------#
 		except TypeError as Err:
 		
 			artist_name = ' ' 
@@ -158,53 +142,14 @@ def Playlist_Artists(user_in, ID_in):
 playlist_IDs=pd.DataFrame()
 
 
-#-----------THIS IS TEST WORK---------------#
-
-def TEST():
-	for playlist in sample.iterrows():
-
-		title=("'" + (playlist[1]['Playlist Name']) + "'")
 		
-		playlist_Name = (playlist[1]['Playlist Name'])
-		genre=(playlist[1]['Genre'])
-
-		playlist_ID = ID_Gen(title)[0]
-		playlist_User = ID_Gen(title)[1]
-		
-		each_Playlist = pd.DataFrame([[playlist_Name, genre, playlist_ID, playlist_User]], columns=['playlist_Name', 'genre', 'playlist_ID', 'playlist_User'])
-		
-		playlist_IDs = playlist_IDs.append(each_Playlist)
-		
-		
-	for playlist_ID in playlist_IDs.iterrows():
-			
-		each_Name = ((playlist_ID[1]['playlist_Name']))
-		each_genre = ((playlist_ID[1]['genre']))
-		each_ID = ((playlist_ID[1]['playlist_ID']))
-		each_User = ((playlist_ID[1]['playlist_User']))
-
-		Artists_list = Playlist_Artists(each_User, each_ID)
-		
-		for artist in Artists_list:
-		
-			#print(artist)
-			
-			artist = artist.replace('"', ' ')
-		
-
-		
-#------------------------------------------------------------------------------#
 #-----------FUNCTION THAT CALLS ID GEN F'N, THEN PLAYLIST_ARTISTS F'N----------#
-#-------------THEN STICKS THE RESULT OF THE PLAYLIST ARTIST F'N IN DB----------#
 
 def Artists_to_DB():
 
-
 	playlist_IDs=pd.DataFrame()
 
-	#-----------------------------------------------------------------------------------#
 	#---------GET PLAYLIST IDS FROM MANUALLY GATHERED SPOTIFY PLAYLIST TABLE------------#
-	#-----------------------------------------------------------------------------------#
 	for playlist in Spotify_Playlist_list.iterrows():
 
 
@@ -220,14 +165,11 @@ def Artists_to_DB():
 		
 		playlist_IDs = playlist_IDs.append(each_Playlist)
 
-
 	test = playlist_IDs.head(3)
 
 	
 	
-	#-----------------------------------------------------------------------------------------#
 	#--------------GET DETAILED ARTIST INFO FOR EVERY PLAYLIST WE NOW HAVE IDS FOR------------#
-	#-----------------------------------------------------------------------------------------#
 	for playlist_ID in playlist_IDs.iterrows():
 		
 		each_Name = ((playlist_ID[1]['playlist_Name']))
@@ -243,8 +185,6 @@ def Artists_to_DB():
 			id = ((artist[1]['artist_ID']))
 			followers = ((artist[1]['artist_followers']))
 			popularity = ((artist[1]['artist_popularity']))
-			
-			
 			
 			TestQL = 'INSERT INTO Artists_expanded(artist, genre, followers, popularity, playlist, artist_id) VALUES ("%s", "%s", "%s", "%s", "%s", "%s");' %(artist_name, each_genre, followers, popularity, each_Name, id)
 			
