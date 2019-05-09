@@ -33,10 +33,8 @@ Stubhub_Key = b'VOU4xvGfhGO9qpVxGo3SABeebnpTmAJw'
 Stubhub_Secret = b'RR2tFwHG7Pinv4ik'
 
 Cat_Key_Secret = (Stubhub_Key + b":" + Stubhub_Secret)
-print(Cat_Key_Secret)
 
 Cat_Key_encode = base64.standard_b64encode(Cat_Key_Secret)
-print(Cat_Key_encode)
 
 
 
@@ -58,7 +56,6 @@ def Data_Fetch_pymysql():
     Fetch_QL = 'SELECT * FROM Artists_expanded;'
     cursor = connection.cursor()
     Artists_DF = pd.read_sql('SELECT * FROM Artists_expanded', con = connection)  
-    print(Artists_DF)
     return Artists_DF
 
 Data_Fetch_pymysql()
@@ -73,7 +70,6 @@ def Get_Access_Token():
 	
 	#-----BUILD URL FOR REQUEST-----#
 	request_url = (base_url + "?" + query_params)
-	print(request_url)
 	
 	#-------ADD ON ADDITIONAL DATA TO URL REQUEST-----#
 	payload = {"username":"wjacks4@g.clemson.edu", "password":"Hester3123"}
@@ -81,9 +77,7 @@ def Get_Access_Token():
 	
 	req = requests.post(request_url, data=json.dumps(payload), headers=headers)
 	json_obj = req.json()
-	print(json_obj)
 	token = json_obj['access_token']
-	print(token)
 	return (token)
 	
 #Get_Access_Token()
@@ -96,7 +90,7 @@ def Get_Event_IDs_pymysql():
     cursor=connection.cursor()
 
     #---------SELECT A SMALL SUBSET OF THE ARTIST DATAFRAME----------#
-    Test = Data_Fetch_pymysql().head(2)
+    Test = Data_Fetch_pymysql().head(67)
 
     #---------DEFINE URL BUILDING BLOCKS-------#
     base_url = 'https://api.stubhub.com/sellers/search/events/v3'
@@ -112,8 +106,6 @@ def Get_Event_IDs_pymysql():
     #for artist in artists:	
     for artist_dat in Test.iterrows():
         
-        print(artist_dat)
-        
         #-----------EXTRACT ARTIST FROM THE ROW------------------#
         spotify_artist = artist_dat[1]['artist']
         spotify_artist_id = artist_dat[1]['artist_id']
@@ -126,7 +118,6 @@ def Get_Event_IDs_pymysql():
     		
         #---------BUILD THE URL TO REQUEST DATA FROM-----------#
         artist_url = (base_url + "?" + query_params)
-        print(artist_url)
     		
         #--------------ADD HEADERS & MAKE REQUEST----------------#
         Auth_Header = ("Bearer " + Get_Access_Token())
@@ -148,8 +139,6 @@ def Get_Event_IDs_pymysql():
             event_date_str = (event['eventDateUTC']).replace("T", " ")
             event_date_cut= event_date_str[:19]
             event_date_UTC = datetime.strptime(event_date_cut, '%Y-%m-%d %H:%M:%S')
-            #event_date_UTC = 'TEST'
-            print(event_date_UTC)
             lowest_price = event['ticketInfo']['minListPrice']
             highest_price = event['ticketInfo']['maxListPrice']
             ticket_count = event['ticketInfo']['totalTickets']
@@ -159,16 +148,11 @@ def Get_Event_IDs_pymysql():
                           columns =['artist', 'artist_id', 'name', 'ID', 'venue', 'city', 'state', 'date_UTC', 'lowest_price', 'highest_price', 'ticket_count', 'listing_count'])
     
             insert_tuple = (spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count, current_Date)
-    
-            print(insert_tuple)
             
             event_QL = 'INSERT INTO `STUBHUB_EVENTS` (`artist`, `artist_id`, `name`, `id`, `venue`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `ticket_count`, `listing_count`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'                       
 
-            print(event_QL)
             result  = cursor.execute(event_QL, insert_tuple)
-            connection.commit()
-            
-            print ("Record inserted successfully into python_users table")                           
+            connection.commit()                          
                 
 Get_Event_IDs_pymysql()
 
