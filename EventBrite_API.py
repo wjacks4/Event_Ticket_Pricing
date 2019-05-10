@@ -14,7 +14,7 @@
 
 #import mysql
 #from mysql.connector import Error
-import psycopg2 as p
+#import psycopg2 as p
 import json
 from dateutil import parser
 import time
@@ -132,8 +132,9 @@ def levenshtein_ratio_and_distance(s, t, ratio_calc = False):
 
 def EventBrite_Artist_Search(df):
     #---------SELECT A SMALL SUBSET OF THE ARTIST DATAFRAME----------#
-	Artist_df = df.head(5)
-	
+	#Artist_df = df.head(5)
+	Artist_df = df
+    
     #-----------GET CURRENT DATETIME FOR TIMESTAMP ADD------------#
 	current_Date = datetime.now()
 	
@@ -144,8 +145,9 @@ def EventBrite_Artist_Search(df):
 		spotify_artist_id = artist_dat[1]['artist_id']
 		
 		#---------ENCODE ARTIST NAMES IN HTML SYNTAX-----------#
-		artist_encode = spotify_artist.replace(" ", "%20")
-		
+		artist_encode = (spotify_artist.replace("&", " ")).replace(" ", "%20")
+		#print(artist_encode)
+        
         #---------BUILD THE URL TO REQUEST DATA FROM-----------#
 		artist_url = (base_string + "expand=ticket_availability,external_ticketing,venue&" + "q=" + artist_encode)
 
