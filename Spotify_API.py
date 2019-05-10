@@ -1,6 +1,18 @@
+#-----------------------------------------------------#
+#-----------SPOTIFY API DATA PULL---------------------#
+#-----------------------------------------------------#
+#-----------PURPOSE - FOR EACH MAJOR PLAYLIST---------#
+#---------------------MANUALLY CHOSEN BY YOURS--------#
+#---------------------TRULY, PULL ALL ARTISTS IN------#
+#---------------------THAT PLAYLIST AS WELL AS--------#
+#---------------------FOLLOWERS AND POPULARITY--------#
+#-----------------------------------------------------#
+#----------LAST UPDATED ON 5/9/2019-------------------#
+#-----------------------------------------------------#
+
 #import mysqlclient as mysql
 #from mysql.connector import Error
-import psycopg2 as p
+#import psycopg2 as p
 import json
 #from dateutil import parser
 import time
@@ -16,7 +28,7 @@ from spotipy.oauth2 import SpotifyClientCredentials
 from spotipy.client import Spotify
 import requests
 import urllib
-import MySQLdb
+import pymysql
 from urllib import parse
 
 #---------------------------------#
@@ -163,9 +175,16 @@ def Artists_to_DB():
 		
 		playlist_IDs = playlist_IDs.append(each_Playlist)
 
-	test = playlist_IDs.head(3)
 
+	#----------CONNECT TO DB------------#
+	connection=pymysql.connect(host = 'ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', user = 'tickets_user', password = 'tickets_pass', db = 'tickets_db')
+	cursor=connection.cursor()
 	
+	#-----------DELETE RECORDS FROM TABLE BEFORE ADD----------------#
+	delete_QL = 'DELETE FROM Artists_expanded;'
+	
+	cursor.execute(delete_QL)
+	connection.commit()
 	
 	#--------------GET DETAILED ARTIST INFO FOR EVERY PLAYLIST WE NOW HAVE IDS FOR------------#
 	for playlist_ID in playlist_IDs.iterrows():
@@ -184,22 +203,32 @@ def Artists_to_DB():
 			followers = ((artist[1]['artist_followers']))
 			popularity = ((artist[1]['artist_popularity']))
 			
-			TestQL = 'INSERT INTO Artists_expanded(artist, genre, followers, popularity, playlist, artist_id) VALUES ("%s", "%s", "%s", "%s", "%s", "%s");' %(artist_name, each_genre, followers, popularity, each_Name, id)
-			
-			try:
+			artist_QL = 'INSERT INTO Artists_expanded(artist, genre, followers, popularity, playlist, artist_id) VALUES ("%s", "%s", "%s", "%s", "%s", "%s");' %(artist_name, each_genre, followers, popularity, each_Name, id)
 
-				connection=MySQLdb.connect('ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', 'tickets_user', 'tickets_pass', 'tickets_db')
-				cursor=connection.cursor()
+			cursor.execute(artist_QL)
+			connection.commit()			
 
-				cursor.execute(TestQL)
-				#data=cursor.fetchall()
-				connection.commit()			
-			
-			except _mysql_exceptions.OperationalError as Err:
-			
-				print('SSL Connection Error ??')
-	
 Artists_to_DB()
+
+
+
+
+def Artist_trim ():
+
+	drop_QL = 'DROP TABLE Artists_trimmed;'
+	
+	create_QL = 'CREATE TABLE Artists_trimmed AS SELECT DISTINCT artist, popularity, max(followers) AS current_followers, artist_id FROM Artists_expanded GROUP BY artist_id;'
+	
+	#----------CONNECT TO DB------------#
+	connection=pymysql.connect(host = 'ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', user = 'tickets_user', password = 'tickets_pass', db = 'tickets_db')
+	cursor=connection.cursor()
+	
+	cursor.execute(drop_QL)
+	cursor.execute(create_QL)
+
+	connection.commit()			
+
+ 
 	
 	
 

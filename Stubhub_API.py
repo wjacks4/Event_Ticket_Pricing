@@ -7,7 +7,7 @@
 #---------------------AND INSERT ALL RELEVANT DATA----#
 #---------------------INTO AN AWS RDB TABLE-----------#
 #-----------------------------------------------------#
-#----------LAST UPDATED ON 5/9/2019------------------#
+#----------LAST UPDATED ON 5/9/2019-------------------#
 #-----------------------------------------------------#
 
 
@@ -70,7 +70,7 @@ def Data_Fetch_pymysql():
     
     Fetch_QL = 'SELECT * FROM Artists_expanded;'
     cursor = connection.cursor()
-    Artists_DF = pd.read_sql('SELECT * FROM Artists_expanded', con = connection)  
+    Artists_DF = pd.read_sql('SELECT * FROM Artists_trimmed', con = connection)  
     return Artists_DF
 
 Data_Fetch_pymysql()
@@ -105,21 +105,20 @@ def Get_Event_IDs_pymysql():
     cursor=connection.cursor()
 
     #---------SELECT A SMALL SUBSET OF THE ARTIST DATAFRAME----------#
-    Test = Data_Fetch_pymysql().head(67)
+    Artists_df = Data_Fetch_pymysql().head(5)
 
     #---------DEFINE URL BUILDING BLOCKS-------#
     base_url = 'https://api.stubhub.com/sellers/search/events/v3'
 	
     #------------------GET ARTIST LIST FROM DF----------------#
-    artists = Test['artist']
+    artists = Artists_df['artist']
     
     #-----------GET CURRENT DATETIME FOR TIMESTAMP ADD------------#
     current_Date = datetime.now()
-    #current_Date = 'TEST'
 	
     #--------------------LOOP THRU ARTISTS--------------------#
     #for artist in artists:	
-    for artist_dat in Test.iterrows():
+    for artist_dat in Artists_df.iterrows():
         
         #-----------EXTRACT ARTIST FROM THE ROW------------------#
         spotify_artist = artist_dat[1]['artist']
@@ -139,9 +138,7 @@ def Get_Event_IDs_pymysql():
         headers = {"Authorization": Auth_Header, "Accept": "application/json"}
         req = requests.get(artist_url, headers=headers)
         json_obj = req.json()
-    		
-        #print(json_obj)
-        
+    		        
         event_list = json_obj['events']
         
         for event in event_list:

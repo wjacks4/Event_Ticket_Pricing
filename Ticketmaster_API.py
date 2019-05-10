@@ -7,14 +7,14 @@
 #---------------------AND INSERT ALL RELEVANT DATA----#
 #---------------------INTO AN AWS RDB TABLE-----------#
 #-----------------------------------------------------#
-#----------LAST UPDATED ON 5/9/2019------------------#
+#----------LAST UPDATED ON 5/9/2019-------------------#
 #-----------------------------------------------------#
 
 #!/usr/bin/env python3
 
 #import mysql
 #from mysql.connector import Error
-import psycopg2 as p
+#import psycopg2 as p
 import json
 from dateutil import parser
 import time
@@ -58,7 +58,7 @@ def Data_Fetch_pymysql():
 
 	#test_db = pd.read_csv("C:/Users/wjack/Desktop/Event_Ticket_Pricing/Event_Ticket_Pricing/Data/test.csv")
 
-	Fetch_QL = 'SELECT * FROM ARTISTS_ONLY;'
+	Fetch_QL = 'SELECT * FROM Artists_trimmed;'
 
     #USING pymysql#
 	connection = pymysql.connect (host = 'ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', user = 'tickets_user', password = 'tickets_pass', db = 'tickets_db')
@@ -68,7 +68,7 @@ def Data_Fetch_pymysql():
 	cursor.execute(Fetch_QL)
 	Artists_List = cursor.fetchall()
 	
-	Artists_DF = pd.read_sql('SELECT * FROM ARTISTS_ONLY_EXPANDED', con = connection)
+	Artists_DF = pd.read_sql('SELECT * FROM Artists_trimmed', con = connection)
 	
 	return Artists_DF
 
@@ -91,10 +91,8 @@ print(request)
 #--------------------------------------------------------------------------------------------------------------#
 def EVENT_IDs (df):
 
-
 	#-----------------CREATE BLANK DATAFRAME FOR APPENDING-------------------#
 	event_ID_df = pd.DataFrame()
-
 
 	#----------LOOP THROUGH ARTISTS IN COLUMN FROM INPUT DATAFRAME-----------#
 	for artist_dat in df.iterrows():
@@ -103,7 +101,6 @@ def EVENT_IDs (df):
 		spotify_artist_id = artist_dat[1]['artist_id']
 
 		#--------------TRY PULLING EVENT IDs, EXCEPT WHEN NO EVENTS APPEAR FOR AN ARTIST NAME-----------#
-
 		try: 
 
 			#---------------------BUILD URL ACCESS STRING---------------------#
@@ -162,21 +159,20 @@ def EVENT_DETAILS():
 
 
 	#---------SELECT A SMALL SUBSET OF THE ARTIST DATAFRAME----------#
-	Test = Data_Fetch_pymysql().head(67)
+	Artists_df = Data_Fetch_pymysql().head(5)
 
-	#----------CONNECT TO DB AND SUBMIT SQL QUERY------------#
+	#----------CONNECT TO DB------------#
 	connection=pymysql.connect(host = 'ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', user = 'tickets_user', password = 'tickets_pass', db = 'tickets_db')
 	cursor=connection.cursor()
 
 	#--------FEED THE RESULT OF THE DATA FETCH FUNCTION INTO THE EVENT_ID FUNCTION------------#
-	IDs_df = EVENT_IDs(Test)
+	IDs_df = EVENT_IDs(Artists_df)
 
 	#--------------CREATE EMPTY EVENT DATAFRAME TO APPEND DATA ON TO LATER----------------#
 	event_df = pd.DataFrame()
 
 	#-----------GET CURRENT DATETIME FOR TIMESTAMP ADD------------#
 	current_Date = datetime.now()
-	#current_Date = 'TEST'
 
 	#------EXTRACT INFORMATION FOR EACH EVENT, USING EVENT IDs GENERATED EARLIER------#
 	for IDs_dat in IDs_df.iterrows():

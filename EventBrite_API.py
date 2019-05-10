@@ -7,7 +7,7 @@
 #---------------------AND INSERT ALL RELEVANT DATA----#
 #---------------------INTO AN AWS RDB TABLE-----------#
 #-----------------------------------------------------#
-#----------LAST UPDATED ON 5/9/2019------------------#
+#----------LAST UPDATED ON 5/9/2019-------------------#
 #-----------------------------------------------------#
 
 #!/usr/bin/env python3
@@ -57,7 +57,7 @@ base_string = "https://www.eventbriteapi.com/v3/events/search/?token=ZG7IKNHFJFF
 #----------------------------------------------------------------------#
 def Data_Fetch():
 
-	Fetch_QL = 'SELECT * FROM ARTISTS_ONLY;'
+	Fetch_QL = 'SELECT * FROM Artists_trimmed;'
 
 	connection = pymysql.connect (host = 'ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', user = 'tickets_user', password = 'tickets_pass', db = 'tickets_db')
 	cursor=connection.cursor()
@@ -65,7 +65,7 @@ def Data_Fetch():
 	cursor.execute(Fetch_QL)
 	Artists_List = cursor.fetchall()
 	
-	Artists_DF = pd.read_sql('SELECT * FROM ARTISTS_ONLY_EXPANDED', con = connection)
+	Artists_DF = pd.read_sql('SELECT * FROM Artists_trimmed', con = connection)
 		
 	return Artists_DF
 	
@@ -132,15 +132,13 @@ def levenshtein_ratio_and_distance(s, t, ratio_calc = False):
 
 def EventBrite_Artist_Search(df):
     #---------SELECT A SMALL SUBSET OF THE ARTIST DATAFRAME----------#
-	sample = df.head(5)
-    #artists = sample['artist']
+	Artist_df = df.head(5)
 	
     #-----------GET CURRENT DATETIME FOR TIMESTAMP ADD------------#
 	current_Date = datetime.now()
-    #current_Date = 'TEST'
 	
 	#--------------------LOOP THRU ARTISTS--------------------#
-	for artist_dat in sample.iterrows():
+	for artist_dat in Artist_df.iterrows():
         
 		spotify_artist = artist_dat[1]['artist']
 		spotify_artist_id = artist_dat[1]['artist_id']
