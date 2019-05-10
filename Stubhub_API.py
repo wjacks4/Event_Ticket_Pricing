@@ -1,6 +1,21 @@
+#-----------------------------------------------------#
+#-----------STUBHUB API DATA PULL---------------------#
+#-----------------------------------------------------#
+#-----------PURPOSE - FOR EACH ARTIST ON A MAJOR------#
+#---------------------SPOTIFY PLAYLIST, SEARCH FOR----#
+#---------------------THEIR EVENTS ON STUBHUB---------#
+#---------------------AND INSERT ALL RELEVANT DATA----#
+#---------------------INTO AN AWS RDB TABLE-----------#
+#-----------------------------------------------------#
+#----------LAST UPDATED ON 5/9/2019------------------#
+#-----------------------------------------------------#
+
+
+#!/usr/bin/env python3
+
 #import mysql
 #from mysql.connector import Error
-import psycopg2 as p
+#import psycopg2 as p
 import json
 from dateutil import parser
 import time

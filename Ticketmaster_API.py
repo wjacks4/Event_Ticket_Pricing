@@ -7,8 +7,10 @@
 #---------------------AND INSERT ALL RELEVANT DATA----#
 #---------------------INTO AN AWS RDB TABLE-----------#
 #-----------------------------------------------------#
-#----------LAST UPDATED ON 4/28/2019------------------#
+#----------LAST UPDATED ON 5/9/2019------------------#
 #-----------------------------------------------------#
+
+#!/usr/bin/env python3
 
 #import mysql
 #from mysql.connector import Error

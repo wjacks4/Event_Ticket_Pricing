@@ -7,8 +7,10 @@
 #---------------------AND INSERT ALL RELEVANT DATA----#
 #---------------------INTO AN AWS RDB TABLE-----------#
 #-----------------------------------------------------#
-#----------LAST UPDATED ON 4/28/2019------------------#
+#----------LAST UPDATED ON 5/9/2019------------------#
 #-----------------------------------------------------#
+
+#!/usr/bin/env python3
 
 #import mysql
 #from mysql.connector import Error
@@ -130,7 +132,7 @@ def levenshtein_ratio_and_distance(s, t, ratio_calc = False):
 
 def EventBrite_Artist_Search(df):
     #---------SELECT A SMALL SUBSET OF THE ARTIST DATAFRAME----------#
-	sample = df.head(67)
+	sample = df.head(5)
     #artists = sample['artist']
 	
     #-----------GET CURRENT DATETIME FOR TIMESTAMP ADD------------#
@@ -213,7 +215,7 @@ def EventBrite_Artist_Search(df):
 								
 
 						#-------APPEND EACH EVENT TO MASTER DATAFRAME...NOT SURE IF I STILL NEED THIS------#
-						event_df = event_df.append(event_array)
+						#event_df = event_df.append(event_array)
 						
 				
 				#------------SINCE INSTANCES OF NO-DATA SEEMS RARE IN EVENTBITE, JUST SKIP RECORD ENTIRELY----------#

@@ -25,9 +25,7 @@ from urllib import parse
 
 Spotify_client_ID = 'ab3b70083f5f469188f8e49b79d5eadb'
 Spotify_client_secret = '6ecf81925e2740c9adecaad28685457a'
-#Spotify_Playlist_list = pd.read_csv('C:/Users/whjac/Desktop/Ticket Flipping/Event_Ticket_Pricing/Data/Spotify Chart Names2.csv')
 Spotify_Playlist_list = pd.read_csv('C:/Users/wjack/Desktop/Event_Ticket_Pricing/Event_Ticket_Pricing/Data/Spotify Chart Names2.csv')
-#print(Spotify_Playlist_list)
 
 
 
