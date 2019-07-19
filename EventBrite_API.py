@@ -39,7 +39,8 @@ from datetime import datetime
 import fuzzywuzzy
 from fuzzywuzzy import fuzz
 
-
+current_Date = datetime.now()
+print('THIS PROGRAM RAN AT ' + str(current_Date))
 
 #------------------------------------------------------------------#
 #---------------EVENTBRITE API AUTHORIZATION DATA------------------#
@@ -65,8 +66,8 @@ def Data_Fetch():
 	cursor.execute(Fetch_QL)
 	Artists_List = cursor.fetchall()
 	
-	Artists_DF = pd.read_sql('SELECT * FROM Artists_trimmed', con = connection)
-		
+	Artists_DF = pd.read_sql('SELECT * FROM Artists_trimmed_ranked WHERE current_followers >= 20000 and current_followers <= 500000 order by current_followers desc', con = connection)
+	
 	return Artists_DF
 	
 
@@ -132,12 +133,12 @@ def levenshtein_ratio_and_distance(s, t, ratio_calc = False):
 
 def EventBrite_Artist_Search(df):
     #---------SELECT A SMALL SUBSET OF THE ARTIST DATAFRAME----------#
-	#Artist_df = df.head(5)
-	Artist_df = df
-    
-    #-----------GET CURRENT DATETIME FOR TIMESTAMP ADD------------#
-	current_Date = datetime.now()
+	Artist_df = df.head(250)
+	#Artist_df = df.head(500)
 	
+	#-----------GET CURRENT DATETIME FOR TIMESTAMP ADD------------#
+	current_Date = datetime.now()
+
 	#--------------------LOOP THRU ARTISTS--------------------#
 	for artist_dat in Artist_df.iterrows():
         
@@ -146,10 +147,10 @@ def EventBrite_Artist_Search(df):
 		
 		#---------ENCODE ARTIST NAMES IN HTML SYNTAX-----------#
 		artist_encode = (spotify_artist.replace("&", " ")).replace(" ", "%20")
-		#print(artist_encode)
-        
+		
         #---------BUILD THE URL TO REQUEST DATA FROM-----------#
 		artist_url = (base_string + "expand=ticket_availability,external_ticketing,venue&" + "q=" + artist_encode)
+
 
 		try:
 			#---------GET RAW RESPONSE FROM URL, DECODE IT TO JSON----------#
@@ -179,10 +180,17 @@ def EventBrite_Artist_Search(df):
 					
 					#----------TEST OUT FUZZYWUZZY FUNCTION-----------------#
 					fuzz_partial = fuzz.partial_ratio(Spotify_name.lower(), EventBrite_name.lower())
+					fuzz_ratio = fuzz.ratio(Spotify_name.lower(), EventBrite_name.lower())
+					
+					print(Spotify_name)
 					
 					#----------ONLY CONTINUE EXTRACTING EVENT DATA IF FUZZY PARTIAL SCORE > .75...IDK--------#
 					
-					if fuzz_partial > 75:
+					if (fuzz_ratio + fuzz_partial) > 150:
+
+						print(event_name)
+						print(fuzz_partial)
+						print(fuzz_ratio)
 
 						#-----------INDIVIDUAL VARIABLE EXTRACTION------------#
 						event_id = event['id']
@@ -215,14 +223,17 @@ def EventBrite_Artist_Search(df):
 								
 
 						#-------APPEND EACH EVENT TO MASTER DATAFRAME...NOT SURE IF I STILL NEED THIS------#
-						#event_df = event_df.append(event_array)
+						event_df = event_df.append(event_array)
 						
 				
 				#------------SINCE INSTANCES OF NO-DATA SEEMS RARE IN EVENTBITE, JUST SKIP RECORD ENTIRELY----------#
 				except TypeError as no_data:
-				
-					print ('One of the fields was missing')
 					
+					#print ('One of the fields was missing')
+					error = 'One of the fields was missing'
+				
+			print(event_df)
+			
 		except urllib.error.HTTPError:
 			
 			print(spotify_artist)

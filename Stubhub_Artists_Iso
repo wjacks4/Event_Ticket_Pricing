@@ -81,8 +81,9 @@ Cat_Key_encode_4 = base64.standard_b64encode(Cat_Key_Secret_4)
 
 print(Cat_Key_encode_4)
 
-Stubhub_Key_5 = b'VhDtFC2UE8oQtBpYLmhWhz931FRPfjsn'
-Stubhub_Secret_5 = b'y2QjurJH2nmcKNt4'
+
+Stubhub_Key_5 = b'GJI8qF2fTcnPC4Nms4CqpLZN0Cz6vixp'
+Stubhub_Secret_5 = b'jkmiGIeQAl3NlHUe'
 
 Cat_Key_Secret_5 = (Stubhub_Key_5 + b":" + Stubhub_Secret_5)
 Cat_Key_encode_5 = base64.standard_b64encode(Cat_Key_Secret_5)
@@ -106,7 +107,7 @@ def Data_Fetch_pymysql():
     
     Fetch_QL = 'SELECT * FROM Artists_expanded;'
     cursor = connection.cursor()
-    Artists_DF = pd.read_sql('SELECT * FROM ARTISTS_WITH_EVENTS order by current_followers desc', con = connection)  
+    Artists_DF = pd.read_sql('SELECT * FROM Artists_trimmed_ranked WHERE current_followers >= 20000 and current_followers <= 500000 order by current_followers desc', con = connection)  
     return Artists_DF
 
 Data_Fetch_pymysql()
@@ -214,8 +215,8 @@ def Get_Access_Token_5():
 	request_url = (base_url + "?" + query_params)
 	
 	#-------ADD ON ADDITIONAL DATA TO URL REQUEST-----#
-	payload = {"username":"sunglassman3123.com", "password":"Hester3123"}
-	headers = {"Authorization": "Basic VmhEdEZDMlVFOG9RdEJwWUxtaFdoejkzMUZSUGZqc246eTJRanVySkgybm1jS050NA==", "Content-Type": "application/json"}
+	payload = {"username":"chabattamusic@gmail.com", "password":"Hester3123"}
+	headers = {"Authorization": "Basic R0pJOHFGMmZUY25QQzRObXM0Q3FwTFpOMEN6NnZpeHA6amttaUdJZVFBbDNObEhVZQ==", "Content-Type": "application/json"}
 	
 	req = requests.post(request_url, data=json.dumps(payload), headers=headers)
 	json_obj = req.json()
@@ -224,8 +225,91 @@ def Get_Access_Token_5():
 	print(token)
 	return (token)
 	
-#Get_Access_Token_5()
+Get_Access_Token_5()
+
+
+def ARTISTS_WITH_EVENTS():
+
+	#--------DEFINE THE SQL DB CONNECTION (MYSQLDB)-------#
+	connection=pymysql.connect('ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', 'tickets_user', 'tickets_pass', 'tickets_db')
+	cursor=connection.cursor()
+
+	#---------SELECT A SMALL SUBSET OF THE ARTIST DATAFRAME----------#
+	#Artists_df = Data_Fetch_pymysql().head(500)
+	Artists_df = Data_Fetch_pymysql().head(20)
+
+	#---------DEFINE URL BUILDING BLOCKS-------#
+	base_url = 'https://api.stubhub.com/sellers/search/events/v3'
+
+	#------------------GET ARTIST LIST FROM DF----------------#
+	artists = Artists_df['artist']
+
+	#-----------GET CURRENT DATETIME FOR TIMESTAMP ADD------------#
+	current_Date = datetime.now()
+
+	#--------------------LOOP THRU ARTISTS--------------------#
+	#for artist in artists:	
+	for artist_dat in Artists_df.iterrows():
+	
+		#-----------EXTRACT ARTIST FROM THE ROW------------------#
+		spotify_artist = artist_dat[1]['artist']
+		spotify_artist_id = artist_dat[1]['artist_id']
+		spotify_artist_popularity = artist_dat[1]['popularity']
+		spotify_artist_followers = artist_dat[1]['current_followers']
+
+		#---------ENCODE ARTIST NAMES IN HTML SYNTAX-----------#
+		artist_encode = spotify_artist.replace(" ", "%20")
 			
+		#---------------------QUERY PARAMS---------------------#
+		query_params = ("q=" + artist_encode + "&" + "rows=100")		
+			
+		#---------BUILD THE URL TO REQUEST DATA FROM-----------#
+		artist_url = (base_url + "?" + query_params)
+			
+		#print(artist_url)
+		#--------------ADD HEADERS & MAKE REQUEST----------------#
+
+		try:
+		
+			Auth_Header = ("Bearer " + Get_Access_Token_5())
+			headers = {"Authorization": Auth_Header, "Accept": "application/json"}
+			req = requests.get(artist_url, headers=headers)
+			json_obj = req.json()
+			
+			event_list = json_obj['events']
+			event_count = len(event_list))
+			
+			print(len(event_list))
+			
+			drop_QL = 'DROP TABLE ARTISTS_WITH_EVENTS;'                       
+			result  = cursor.execute(event_QL)
+			connection.commit()
+			
+			create_QL = 'CREATE TABLE ARTISTS_WITH_EVENTS AS SELECT * FROM Artists_Targeted limit 1;'                       
+			result  = cursor.execute(create_QL)
+			connection.commit()			
+			
+			clear_QL = 'DELETE FROM ARTISTS_WITH_EVENTS;'                       
+			result  = cursor.execute(clear_QL)
+			connection.commit()	
+			
+			if event_count > 10:
+			
+				insert_tuple = (spotify_artist, spotify_artist_id, spotify_artist_popularity, spotify_artist_followers)
+				
+				event_QL = 'INSERT INTO `ARTISTS_WITH_EVENTS` (`artist`, `artist_id`, `popularity`, `current_followers`) VALUES (%s, %s, %s, %s)'
+
+
+			
+		except KeyError as Overload:
+		
+			print(KeyError)
+			#print('exceeded quota for stubhub API')
+		
+		
+
+				
+ARTISTS_WITH_EVENTS()			
 
 	
 def STUBHUB_EVENT_PULL():
@@ -235,7 +319,7 @@ def STUBHUB_EVENT_PULL():
 	cursor=connection.cursor()
 
 	#---------SELECT A SMALL SUBSET OF THE ARTIST DATAFRAME----------#
-	#Artists_df = Data_Fetch_pymysql().head(200)
+#	Artists_df = Data_Fetch_pymysql().head(200)
 	Artists_df = Data_Fetch_pymysql().head(20)
 
 	#---------DEFINE URL BUILDING BLOCKS-------#
@@ -287,7 +371,7 @@ def STUBHUB_EVENT_PULL():
 				for event in event_list:
 					
 					event_name = event['name']
-					#print(event_name)
+					print(event_name)
 					event_id = str(event['id'])
 					event_venue= event['venue']['name']
 					event_city = event['venue']['city']
@@ -335,7 +419,7 @@ def STUBHUB_EVENT_PULL():
 				for event in event_list:
 					
 					event_name = event['name']
-					#print(event_name)
+					print(event_name)
 					event_id = str(event['id'])
 					event_venue= event['venue']['name']
 					event_city = event['venue']['city']
@@ -383,7 +467,7 @@ def STUBHUB_EVENT_PULL():
 				for event in event_list:
 					
 					event_name = event['name']
-					#print(event_name)
+					print(event_name)
 					event_id = str(event['id'])
 					event_venue= event['venue']['name']
 					event_city = event['venue']['city']
@@ -433,7 +517,7 @@ def STUBHUB_EVENT_PULL():
 				for event in event_list:
 					
 					event_name = event['name']
-					#print(event_name)
+					print(event_name)
 					event_id = str(event['id'])
 					event_venue= event['venue']['name']
 					event_city = event['venue']['city']
@@ -479,7 +563,7 @@ def STUBHUB_EVENT_PULL():
 				for event in event_list:
 					
 					event_name = event['name']
-					#print(event_name)
+					print(event_name)
 					event_id = str(event['id'])
 					event_venue= event['venue']['name']
 					event_city = event['venue']['city']
@@ -510,7 +594,7 @@ def STUBHUB_EVENT_PULL():
 
 		i = i+1
                
-STUBHUB_EVENT_PULL()
+#STUBHUB_EVENT_PULL()
 
 
 
