@@ -214,11 +214,12 @@ def Get_Access_Token_5():
 	request_url = (base_url + "?" + query_params)
 	
 	#-------ADD ON ADDITIONAL DATA TO URL REQUEST-----#
-	payload = {"username":"sunglassman3123.com", "password":"Hester3123"}
+	payload = {"username":"sunglassman3123@gmail.com", "password":"Hester3123"}
 	headers = {"Authorization": "Basic VmhEdEZDMlVFOG9RdEJwWUxtaFdoejkzMUZSUGZqc246eTJRanVySkgybm1jS050NA==", "Content-Type": "application/json"}
 	
 	req = requests.post(request_url, data=json.dumps(payload), headers=headers)
 	json_obj = req.json()
+	print(json_obj)
 	token = json_obj['access_token']
 	
 	print(token)
@@ -235,8 +236,8 @@ def STUBHUB_EVENT_PULL():
 	cursor=connection.cursor()
 
 	#---------SELECT A SMALL SUBSET OF THE ARTIST DATAFRAME----------#
-	#Artists_df = Data_Fetch_pymysql().head(200)
-	Artists_df = Data_Fetch_pymysql().head(20)
+	Artists_df = Data_Fetch_pymysql().head(200)
+	#Artists_df = Data_Fetch_pymysql().head(20)
 
 	#---------DEFINE URL BUILDING BLOCKS-------#
 	base_url = 'https://api.stubhub.com/sellers/search/events/v3'
@@ -269,8 +270,8 @@ def STUBHUB_EVENT_PULL():
 		#print(artist_url)
 		#--------------ADD HEADERS & MAKE REQUEST----------------#
 		
-#		if i <=40:
-		if i <=4:
+		if i <=40:
+#		if i <=4:
 		
 			print(i)
 			try:
@@ -287,28 +288,30 @@ def STUBHUB_EVENT_PULL():
 				for event in event_list:
 					
 					event_name = event['name']
-					#print(event_name)
-					event_id = str(event['id'])
-					event_venue= event['venue']['name']
-					event_city = event['venue']['city']
-					event_state = event['venue']['state']
-					event_date_str = (event['eventDateUTC']).replace("T", " ")
-					event_date_cut= event_date_str[:19]
-					event_date_UTC = datetime.strptime(event_date_cut, '%Y-%m-%d %H:%M:%S')
-					lowest_price = event['ticketInfo']['minListPrice']
-					highest_price = event['ticketInfo']['maxListPrice']
-					ticket_count = event['ticketInfo']['totalTickets']
-					listing_count = event['ticketInfo']['totalListings']
 					
-					event_array = pd.DataFrame([[spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count]], 
-								  columns =['artist', 'artist_id', 'name', 'ID', 'venue', 'city', 'state', 'date_UTC', 'lowest_price', 'highest_price', 'ticket_count', 'listing_count'])
+					if 'PARKING' not in event_name:
+						print(event_name)
+						event_id = str(event['id'])
+						event_venue= event['venue']['name']
+						event_city = event['venue']['city']
+						event_state = event['venue']['state']
+						event_date_str = (event['eventDateUTC']).replace("T", " ")
+						event_date_cut= event_date_str[:19]
+						event_date_UTC = datetime.strptime(event_date_cut, '%Y-%m-%d %H:%M:%S')
+						lowest_price = event['ticketInfo']['minListPrice']
+						highest_price = event['ticketInfo']['maxListPrice']
+						ticket_count = event['ticketInfo']['totalTickets']
+						listing_count = event['ticketInfo']['totalListings']
+						
+						event_array = pd.DataFrame([[spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count]], 
+									  columns =['artist', 'artist_id', 'name', 'ID', 'venue', 'city', 'state', 'date_UTC', 'lowest_price', 'highest_price', 'ticket_count', 'listing_count'])
 
-					insert_tuple = (spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count, current_Date)
-					
-					event_QL = 'INSERT INTO `STUBHUB_EVENTS` (`artist`, `artist_id`, `name`, `id`, `venue`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `ticket_count`, `listing_count`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'                       
+						insert_tuple = (spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count, current_Date)
+						
+						event_QL = 'INSERT INTO `STUBHUB_EVENTS` (`artist`, `artist_id`, `name`, `id`, `venue`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `ticket_count`, `listing_count`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'                       
 
-					result  = cursor.execute(event_QL, insert_tuple)
-					connection.commit()
+						result  = cursor.execute(event_QL, insert_tuple)
+						connection.commit()
 
 			except KeyError as Overload:
 			
@@ -316,8 +319,8 @@ def STUBHUB_EVENT_PULL():
 				print('exceeded quota for stubhub API')
 				
 				
-#		elif i > 40 and i <= 80:
-		elif i > 4 and i <=8:
+		elif i > 40 and i <= 80:
+#		elif i > 4 and i <=8:
 		
 			print(i)
 
@@ -335,28 +338,30 @@ def STUBHUB_EVENT_PULL():
 				for event in event_list:
 					
 					event_name = event['name']
-					#print(event_name)
-					event_id = str(event['id'])
-					event_venue= event['venue']['name']
-					event_city = event['venue']['city']
-					event_state = event['venue']['state']
-					event_date_str = (event['eventDateUTC']).replace("T", " ")
-					event_date_cut= event_date_str[:19]
-					event_date_UTC = datetime.strptime(event_date_cut, '%Y-%m-%d %H:%M:%S')
-					lowest_price = event['ticketInfo']['minListPrice']
-					highest_price = event['ticketInfo']['maxListPrice']
-					ticket_count = event['ticketInfo']['totalTickets']
-					listing_count = event['ticketInfo']['totalListings']
 					
-					event_array = pd.DataFrame([[spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count]], 
-								  columns =['artist', 'artist_id', 'name', 'ID', 'venue', 'city', 'state', 'date_UTC', 'lowest_price', 'highest_price', 'ticket_count', 'listing_count'])
+					if 'PARKING' not in event_name:
+						print(event_name)
+						event_id = str(event['id'])
+						event_venue= event['venue']['name']
+						event_city = event['venue']['city']
+						event_state = event['venue']['state']
+						event_date_str = (event['eventDateUTC']).replace("T", " ")
+						event_date_cut= event_date_str[:19]
+						event_date_UTC = datetime.strptime(event_date_cut, '%Y-%m-%d %H:%M:%S')
+						lowest_price = event['ticketInfo']['minListPrice']
+						highest_price = event['ticketInfo']['maxListPrice']
+						ticket_count = event['ticketInfo']['totalTickets']
+						listing_count = event['ticketInfo']['totalListings']
+						
+						event_array = pd.DataFrame([[spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count]], 
+									  columns =['artist', 'artist_id', 'name', 'ID', 'venue', 'city', 'state', 'date_UTC', 'lowest_price', 'highest_price', 'ticket_count', 'listing_count'])
 
-					insert_tuple = (spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count, current_Date)
-					
-					event_QL = 'INSERT INTO `STUBHUB_EVENTS` (`artist`, `artist_id`, `name`, `id`, `venue`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `ticket_count`, `listing_count`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'                       
+						insert_tuple = (spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count, current_Date)
+						
+						event_QL = 'INSERT INTO `STUBHUB_EVENTS` (`artist`, `artist_id`, `name`, `id`, `venue`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `ticket_count`, `listing_count`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'                       
 
-					result  = cursor.execute(event_QL, insert_tuple)
-					connection.commit()
+						result  = cursor.execute(event_QL, insert_tuple)
+						connection.commit()
 					
 			except KeyError as Overload:
 		
@@ -364,8 +369,8 @@ def STUBHUB_EVENT_PULL():
 				print('exceeded quota for stubhub API')	
 
 			
-#		elif i > 80 and i <= 120:
-		elif i > 8 and i <=12:
+		elif i > 80 and i <= 120:
+#		elif i > 8 and i <=12:
 		
 			print(i)
 
@@ -383,28 +388,30 @@ def STUBHUB_EVENT_PULL():
 				for event in event_list:
 					
 					event_name = event['name']
-					#print(event_name)
-					event_id = str(event['id'])
-					event_venue= event['venue']['name']
-					event_city = event['venue']['city']
-					event_state = event['venue']['state']
-					event_date_str = (event['eventDateUTC']).replace("T", " ")
-					event_date_cut= event_date_str[:19]
-					event_date_UTC = datetime.strptime(event_date_cut, '%Y-%m-%d %H:%M:%S')
-					lowest_price = event['ticketInfo']['minListPrice']
-					highest_price = event['ticketInfo']['maxListPrice']
-					ticket_count = event['ticketInfo']['totalTickets']
-					listing_count = event['ticketInfo']['totalListings']
 					
-					event_array = pd.DataFrame([[spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count]], 
-								  columns =['artist', 'artist_id', 'name', 'ID', 'venue', 'city', 'state', 'date_UTC', 'lowest_price', 'highest_price', 'ticket_count', 'listing_count'])
+					if 'PARKING' not in event_name:
+						print(event_name)
+						event_id = str(event['id'])
+						event_venue= event['venue']['name']
+						event_city = event['venue']['city']
+						event_state = event['venue']['state']
+						event_date_str = (event['eventDateUTC']).replace("T", " ")
+						event_date_cut= event_date_str[:19]
+						event_date_UTC = datetime.strptime(event_date_cut, '%Y-%m-%d %H:%M:%S')
+						lowest_price = event['ticketInfo']['minListPrice']
+						highest_price = event['ticketInfo']['maxListPrice']
+						ticket_count = event['ticketInfo']['totalTickets']
+						listing_count = event['ticketInfo']['totalListings']
+						
+						event_array = pd.DataFrame([[spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count]], 
+									  columns =['artist', 'artist_id', 'name', 'ID', 'venue', 'city', 'state', 'date_UTC', 'lowest_price', 'highest_price', 'ticket_count', 'listing_count'])
 
-					insert_tuple = (spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count, current_Date)
-					
-					event_QL = 'INSERT INTO `STUBHUB_EVENTS` (`artist`, `artist_id`, `name`, `id`, `venue`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `ticket_count`, `listing_count`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'                       
+						insert_tuple = (spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count, current_Date)
+						
+						event_QL = 'INSERT INTO `STUBHUB_EVENTS` (`artist`, `artist_id`, `name`, `id`, `venue`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `ticket_count`, `listing_count`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'                       
 
-					result  = cursor.execute(event_QL, insert_tuple)
-					connection.commit()
+						result  = cursor.execute(event_QL, insert_tuple)
+						connection.commit()
 
 			except KeyError as Overload:
 		
@@ -412,8 +419,8 @@ def STUBHUB_EVENT_PULL():
 				print('exceeded quota for stubhub API')	
 
 			
-#		elif i > 120 and i<=160:
-		elif i > 12 and i <=16:
+		elif i > 120 and i<=160:
+#		elif i > 12 and i <=16:
 		
 		
 			print(i)
@@ -433,28 +440,29 @@ def STUBHUB_EVENT_PULL():
 				for event in event_list:
 					
 					event_name = event['name']
-					#print(event_name)
-					event_id = str(event['id'])
-					event_venue= event['venue']['name']
-					event_city = event['venue']['city']
-					event_state = event['venue']['state']
-					event_date_str = (event['eventDateUTC']).replace("T", " ")
-					event_date_cut= event_date_str[:19]
-					event_date_UTC = datetime.strptime(event_date_cut, '%Y-%m-%d %H:%M:%S')
-					lowest_price = event['ticketInfo']['minListPrice']
-					highest_price = event['ticketInfo']['maxListPrice']
-					ticket_count = event['ticketInfo']['totalTickets']
-					listing_count = event['ticketInfo']['totalListings']
-					
-					event_array = pd.DataFrame([[spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count]], 
-								  columns =['artist', 'artist_id', 'name', 'ID', 'venue', 'city', 'state', 'date_UTC', 'lowest_price', 'highest_price', 'ticket_count', 'listing_count'])
+					if 'PARKING' not in event_name:
+						print(event_name)
+						event_id = str(event['id'])
+						event_venue= event['venue']['name']
+						event_city = event['venue']['city']
+						event_state = event['venue']['state']
+						event_date_str = (event['eventDateUTC']).replace("T", " ")
+						event_date_cut= event_date_str[:19]
+						event_date_UTC = datetime.strptime(event_date_cut, '%Y-%m-%d %H:%M:%S')
+						lowest_price = event['ticketInfo']['minListPrice']
+						highest_price = event['ticketInfo']['maxListPrice']
+						ticket_count = event['ticketInfo']['totalTickets']
+						listing_count = event['ticketInfo']['totalListings']
+						
+						event_array = pd.DataFrame([[spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count]], 
+									  columns =['artist', 'artist_id', 'name', 'ID', 'venue', 'city', 'state', 'date_UTC', 'lowest_price', 'highest_price', 'ticket_count', 'listing_count'])
 
-					insert_tuple = (spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count, current_Date)
-					
-					event_QL = 'INSERT INTO `STUBHUB_EVENTS` (`artist`, `artist_id`, `name`, `id`, `venue`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `ticket_count`, `listing_count`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'                       
+						insert_tuple = (spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count, current_Date)
+						
+						event_QL = 'INSERT INTO `STUBHUB_EVENTS` (`artist`, `artist_id`, `name`, `id`, `venue`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `ticket_count`, `listing_count`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'                       
 
-					result  = cursor.execute(event_QL, insert_tuple)
-					connection.commit()
+						result  = cursor.execute(event_QL, insert_tuple)
+						connection.commit()
 
 			except KeyError as Overload:
 		
@@ -479,28 +487,29 @@ def STUBHUB_EVENT_PULL():
 				for event in event_list:
 					
 					event_name = event['name']
-					#print(event_name)
-					event_id = str(event['id'])
-					event_venue= event['venue']['name']
-					event_city = event['venue']['city']
-					event_state = event['venue']['state']
-					event_date_str = (event['eventDateUTC']).replace("T", " ")
-					event_date_cut= event_date_str[:19]
-					event_date_UTC = datetime.strptime(event_date_cut, '%Y-%m-%d %H:%M:%S')
-					lowest_price = event['ticketInfo']['minListPrice']
-					highest_price = event['ticketInfo']['maxListPrice']
-					ticket_count = event['ticketInfo']['totalTickets']
-					listing_count = event['ticketInfo']['totalListings']
-					
-					event_array = pd.DataFrame([[spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count]], 
-								  columns =['artist', 'artist_id', 'name', 'ID', 'venue', 'city', 'state', 'date_UTC', 'lowest_price', 'highest_price', 'ticket_count', 'listing_count'])
+					if 'PARKING' not in event_name:
+						print(event_name)
+						event_id = str(event['id'])
+						event_venue= event['venue']['name']
+						event_city = event['venue']['city']
+						event_state = event['venue']['state']
+						event_date_str = (event['eventDateUTC']).replace("T", " ")
+						event_date_cut= event_date_str[:19]
+						event_date_UTC = datetime.strptime(event_date_cut, '%Y-%m-%d %H:%M:%S')
+						lowest_price = event['ticketInfo']['minListPrice']
+						highest_price = event['ticketInfo']['maxListPrice']
+						ticket_count = event['ticketInfo']['totalTickets']
+						listing_count = event['ticketInfo']['totalListings']
+						
+						event_array = pd.DataFrame([[spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count]], 
+									  columns =['artist', 'artist_id', 'name', 'ID', 'venue', 'city', 'state', 'date_UTC', 'lowest_price', 'highest_price', 'ticket_count', 'listing_count'])
 
-					insert_tuple = (spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count, current_Date)
-					
-					event_QL = 'INSERT INTO `STUBHUB_EVENTS` (`artist`, `artist_id`, `name`, `id`, `venue`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `ticket_count`, `listing_count`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'                       
+						insert_tuple = (spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count, current_Date)
+						
+						event_QL = 'INSERT INTO `STUBHUB_EVENTS` (`artist`, `artist_id`, `name`, `id`, `venue`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `ticket_count`, `listing_count`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'                       
 
-					result  = cursor.execute(event_QL, insert_tuple)
-					connection.commit()
+						result  = cursor.execute(event_QL, insert_tuple)
+						connection.commit()
 
 			except KeyError as Overload:
 

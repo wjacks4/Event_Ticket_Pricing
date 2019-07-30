@@ -1,9 +1,45 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Apr  5 09:35:23 2019
+#-----------------------------------------------------#
+#-----------SEATGEEK API DATA PULL--------------------#
+#-----------------------------------------------------#
+#-----------PURPOSE - FOR EACH ARTIST ON A MAJOR------#
+#---------------------SPOTIFY PLAYLIST, SEARCH FOR----#
+#---------------------THEIR EVENTS ON STUBHUB---------#
+#---------------------AND INSERT ALL RELEVANT DATA----#
+#---------------------INTO AN AWS RDB TABLE-----------#
+#-----------------------------------------------------#
+#----------LAST UPDATED ON 5/9/2019-------------------#
+#-----------------------------------------------------#
 
-@author: bswxj01
-"""
+#!/usr/bin/env python3
+
+#import mysql
+#from mysql.connector import Error
+#import psycopg2 as p
+import json
+from dateutil import parser
+import time
+import os
+import subprocess
+import urllib
+import urllib.request
+import pandas as pd
+import unidecode
+from unidecode import unidecode
+import requests
+import urllib
+from urllib import parse
+import sys
+import base64
+import numpy as np
+#import mysql-python
+import pymysql
+#import MySQLdb
+import base64
+import datetime
+from datetime import datetime
+import easydict 
+from collections import defaultdict
+import pickle
 
 import urllib
 import pandas as pd
@@ -11,6 +47,7 @@ import numpy as np
 import json
 import requests
 
+import boto3
 
 base_url = ('https://api.seatgeek.com/2/')
 
@@ -18,111 +55,226 @@ client_id_str = ('MTM4MTIyMDZ8MTU1NDQ3MTkxMy43Ng')
 
 client_secret_str = ('c49766eaad2bc8bc33810d112d141ca9a09b0a78b1be52c459eb19c5fd3527a5')
 
-event_data_sample = pd.read_csv("C:/Users/whjac/Desktop/Ticket Flipping/Event_Ticket_Pricing/Data/Ticketmaster_event_list.csv")
-
-print(event_data_sample)
 
 
+#----------------------------------------------------------------------#
+#--------------------------DYNAMODB SETUP------------------------------#
+#----------------------------------------------------------------------#
 
-#USING THE STR SUBSTITUTION APPROACH#
+dynamodb = boto3.resource('dynamodb')
+dynamoTable = dynamodb.Table('Event_Table')
+dynamoTable.put_item(
 
-def STR_URL_METHOD():
-
-	url = (base_url + 'events?' + 'client_id=' + client_id_str + '&' + 'per_page=1' + '&' + 'performers.slug=DABABY' + '&' + 'venue.city=Denver')
-
-	print(url)
-
-	raw_Data=urllib.request.urlopen(url)
-	encoded_Dat = raw_Data.read().decode('utf-8', 'ignore')			
-	json_obj = json.loads(encoded_Dat)
+	Item = {
+	'Event_ID':'RebelutionThe Met PhiladelphiaPhiladelphiaPA2019-07-31T23:00:00',
+	'Location':'Raleigh',
+	'date_UTC':'2019-08-05 12:00:00'
+	}
 	
-	event_name = json_obj['events'][0]['title']
+)
+
+
+#----------------------------------------------------------------------#
+#---------------------GET ARTIST LIST FROM MYSQL DB--------------------#
+#----------------------------------------------------------------------#
+
+def Data_Fetch_pymysql():
+
+    #Fetch_QL = 'SELECT * FROM ARTISTS_ONLY;'
+    
+    #USING pymysql#
+    connection = pymysql.connect (host = 'ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com',
+                                  user = 'tickets_user',
+                                  password = 'tickets_pass',
+                                  db = 'tickets_db')
+    
+    Fetch_QL = 'SELECT * FROM Artists_expanded;'
+    cursor = connection.cursor()
+    Artists_DF = pd.read_sql('SELECT * FROM ARTISTS_WITH_EVENTS order by current_followers desc', con = connection)  
+    return Artists_DF
+
+Data_Fetch_pymysql()
+
+
+#----------------------------------------------------------------------#
+#--------------------------DEFINE EVENT DICT---------------------------#
+#----------------------------------------------------------------------#
+
+
+events_dict = dict()
+
+#with open('C:/Users/wjack/Documents/test.pickle', 'rb') as handle:
+#	events_dict = pickle.load(handle)
+
+#print(events_dict)
+#test = events_dict['RebelutionThe Met PhiladelphiaPhiladelphiaPA2019-07-31T23:00:00']
+#print(test)
+
+#dynamoTable = dynamodb.Table('Event_Table')
+
+#dynamoTable.put_item(
 	
-	print(event_name)
-
-#STR_URL_METHOD()
-
-#print('NEXT METHOD')
-
-
-
-
-
-
-#USING THE PAYLOAD APPROACH#
-
-def PAYLOAD_METHOD(performer_slug, city):
-
-	print(performer_slug)
-	print(city)
-
-	url = 'https://api.seatgeek.com/2/events?format=json'
-	payload = {'per_page' : 1,
-			   'performers.slug':performer_slug,
-			   'venue.city': city,
-			   'client_id':  client_id_str,
-			  }
-	r = requests.get(url, params=payload,verify=True)
-
-	print(r.url)
-
-	json_obj = json.loads(r.text)
+#	Item = events_dict
 	
-	event_name = json_obj['events'][0]['title']
-	
-	print(event_name)
-	
-	event_stats=json_obj['events'][0]['stats']
-	
-	print(event_stats)
-	
-	avg_price = json_obj['events'][0]['stats']['average_price']
-	med_price = json_obj['events'][0]['stats']['median_price']
-	lowest_price = json_obj['events'][0]['stats']['lowest_price']
-	highest_price = json_obj['events'][0]['stats']['highest_price']
-	no_listings = json_obj['events'][0]['stats']['listing_count']
-	
-	print(avg_price)
-	print(med_price)
-	print(lowest_price)
-	print(highest_price)
-	print(no_listings)
-	
-	
-PAYLOAD_METHOD('DaBaby', 'Denver')
+#)
 
-
-
-
-
-
-
-
-	
-	
 	
 def SeatGeek_Events():
     
-	artist=event_data_sample["attraction_name"]
+	Artists_df = Data_Fetch_pymysql().head(20)
+	#Artists_df = Data_Fetch_pymysql().head(200)
 	
-	location=event_data_sample["city"]
+	#------------------GET ARTIST LIST FROM DF----------------#
+	artists = Artists_df['artist']
 
+	#-----------GET CURRENT DATETIME FOR TIMESTAMP ADD------------#
+	current_Date = datetime.now()
 	
-    
-	for event in event_data_sample.iterrows() :
+	i = 1
+
+	#---------------BEGIN BUILDING EVENTS DATAFRAME FROM JSON----------------#
+	#-----CREATE BLANK DATAFRAME FOR APPENDING, ISOLATE EVENTS FROM JSON-----#
+	event_df = pd.DataFrame()
+
+	#--------------------LOOP THRU ARTISTS--------------------#
+	#for artist in artists:	
+	for artist_dat in Artists_df.iterrows():
+        
+		#-----------EXTRACT ARTIST FROM THE ROW------------------#
+		spotify_artist = artist_dat[1]['artist']
+		spotify_artist_id = artist_dat[1]['artist_id']
 	
-		performer_slug=(event[1]['attraction_name'])
-		city=(event[1]['city'])
+		performer_slug=spotify_artist
 		
 		try:
 		
-			PAYLOAD_METHOD(performer_slug, city)
+			url = 'https://api.seatgeek.com/2/events?format=json'
+			payload = {'per_page' : 1,
+					   'performers.slug':performer_slug,
+					   'client_id':  client_id_str,
+					  }
+			r = requests.get(url, params=payload,verify=True)
+
+			print(r.url)
+
+			json_obj = json.loads(r.text)
 			
+			#print(json_obj)
+			
+			try:
+				event_name = json_obj['events'][0]['title']
+				#print(event_name)
+			except KeyError as noName:
+				event_name = ''
+					
+			try:
+				event_id = json_obj['events'][0]['id']
+				#print(event_id)
+			except KeyError as noID:
+				event_id = ''
+				
+			try:
+				event_date_UTC = json_obj['events'][0]['datetime_utc']
+				#print(event_date_utc)
+			except KeyError as noDatetime:
+				event_date_UTC = ''	
+			
+			try:
+				event_venue = json_obj['events'][0]['venue']['name']
+				#print(event_venue)
+			except KeyError as noVenue:
+				event_venue = ''		
+
+			try:
+				event_city = json_obj['events'][0]['venue']['city']
+				#print(event_city)
+			except KeyError as noCity:
+				event_city = ''		
+
+
+			try:
+				event_state = json_obj['events'][0]['venue']['state']
+				#print(event_state)
+			except KeyError as noState:
+				event_state = ''
+
+			event_stats=json_obj['events'][0]['stats']
+			#print(event_stats)
+			
+			try:
+				avg_price = json_obj['events'][0]['stats']['average_price']
+				#print(avg_price)
+			except KeyError as noAvg:
+				avg_price = ''
+
+			try:
+				med_price = json_obj['events'][0]['stats']['median_price']
+				#print(med_price)
+			except KeyError as noMed:
+				med_price = ''
+			
+			try:
+				lowest_price = json_obj['events'][0]['stats']['lowest_price']
+				#print(lowest_price)
+			except KeyError as noLowest:
+				lowest_price = ''
+			
+			try:
+				highest_price = json_obj['events'][0]['stats']['highest_price']
+				#print(highest_price)
+			except KeyError as noHighest:
+				highest_price = ''	
+			
+			try:
+				no_listings = json_obj['events'][0]['stats']['listing_count']
+				#print(no_listings)
+			except KeyError as noListingCount:
+				no_listings = ''	
+				
+			
+			event_key = spotify_artist + event_venue + event_city + event_state + event_date_UTC
+			
+			event_array = pd.DataFrame([[spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, avg_price, med_price, no_listings]], 
+									   columns =['artist', 'artist_id', 'name', 'ID', 'venue', 'city', 'state', 'date_UTC', 'lowest_price', 'highest_price', 'avg_price', 'med_price', 'listing_count'])
+		
+			event_json = event_array.to_json(orient = 'records')
+		
+			list2 = (spotify_artist, spotify_artist_id, current_Date)
+
+			if event_key in events_dict:
+				
+				prev_event_list = events_dict[event_key]
+				appended_list = prev_event_list.append(event_json)
+				events_dict[event_key]=appended_list
+				
+				#-------------THE PANDAS WAY TO DO IT----------------#
+				#prev_event_df = events_dict[event_key]
+				#appended_df = prev_event_df.append(event_array)
+				#events_dict[event_key] = appended_df
+				
+			else:
+				
+				events_dict[event_key] = event_json
+			
+				#-----------THE PANDAS WAY TO DO IT------------#
+				#events_dict[event_key] = event_array
+		
+			print(events_dict)
+		
+			#-------APPEND EACH EVENT TO MASTER DATAFRAME...NOT SURE IF I STILL NEED THIS------#
+			event_df = event_df.append(event_array)
+
+		
 		except IndexError as e:
 		
 			print('NO RELATED SEATGEEK EVENTS')
 			
-			
+	print(event_df)
+	
+	with open('C:/Users/wjack/Documents/test.pickle', 'wb') as handle:
+		pickle.dump(events_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
+	
+
 SeatGeek_Events()
 
 

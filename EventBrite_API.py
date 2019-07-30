@@ -56,22 +56,22 @@ base_string = "https://www.eventbriteapi.com/v3/events/search/?token=ZG7IKNHFJFF
 #----------------------------------------------------------------------#
 #---------------------GET ARTIST LIST FROM MYSQL DB--------------------#
 #----------------------------------------------------------------------#
-def Data_Fetch():
+def Data_Fetch_pymysql():
 
-	Fetch_QL = 'SELECT * FROM Artists_trimmed;'
+    #Fetch_QL = 'SELECT * FROM ARTISTS_ONLY;'
+    
+    #USING pymysql#
+    connection = pymysql.connect (host = 'ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com',
+                                  user = 'tickets_user',
+                                  password = 'tickets_pass',
+                                  db = 'tickets_db')
+    
+    Fetch_QL = 'SELECT * FROM Artists_expanded;'
+    cursor = connection.cursor()
+    Artists_DF = pd.read_sql('SELECT * FROM ARTISTS_WITH_EVENTS order by current_followers desc', con = connection)  
+    return Artists_DF
 
-	connection = pymysql.connect (host = 'ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', user = 'tickets_user', password = 'tickets_pass', db = 'tickets_db')
-	cursor=connection.cursor()
-
-	cursor.execute(Fetch_QL)
-	Artists_List = cursor.fetchall()
-	
-	Artists_DF = pd.read_sql('SELECT * FROM Artists_trimmed_ranked WHERE current_followers >= 20000 and current_followers <= 500000 order by current_followers desc', con = connection)
-	
-	return Artists_DF
-	
-
-Data_Fetch()
+Data_Fetch_pymysql()
 
 
 
@@ -134,7 +134,7 @@ def levenshtein_ratio_and_distance(s, t, ratio_calc = False):
 def EventBrite_Artist_Search(df):
     #---------SELECT A SMALL SUBSET OF THE ARTIST DATAFRAME----------#
 	Artist_df = df.head(250)
-	#Artist_df = df.head(500)
+	#Artist_df = df.head(5)
 	
 	#-----------GET CURRENT DATETIME FOR TIMESTAMP ADD------------#
 	current_Date = datetime.now()
@@ -245,5 +245,5 @@ def EventBrite_Artist_Search(df):
 #---------------------------------------------------#
 #---------------CALL MAIN FUNCTION------------------#	
 #---------------------------------------------------#	
-EventBrite_Artist_Search(Data_Fetch())
+EventBrite_Artist_Search(Data_Fetch_pymysql())
 

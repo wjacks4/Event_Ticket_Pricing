@@ -95,7 +95,7 @@ def Get_Access_Token():
 	print(token)
 	return (token)
 	
-Get_Access_Token_1()
+Get_Access_Token()
 
 
 
@@ -160,7 +160,7 @@ def ARTISTS_WITH_EVENTS():
 
 		try:
 		
-			Auth_Header = ("Bearer " + Get_Access_Token_1())
+			Auth_Header = ("Bearer " + Get_Access_Token())
 			headers = {"Authorization": Auth_Header, "Accept": "application/json"}
 			req = requests.get(artist_url, headers=headers)
 			json_obj = req.json()
