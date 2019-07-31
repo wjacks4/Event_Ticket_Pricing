@@ -40,6 +40,9 @@ from datetime import datetime
 import easydict 
 from collections import defaultdict
 import pickle
+import pprint
+from pprint import pprint
+
 
 import urllib
 import pandas as pd
@@ -106,17 +109,45 @@ events_dict = dict()
 #with open('C:/Users/wjack/Documents/test.pickle', 'rb') as handle:
 #	events_dict = pickle.load(handle)
 
+#event = events_dict['AtreyuDowntown Las Vegas Events CenterLas VegasNV2019-10-18T10:30:00']
+
+#json_test = json.loads(event)
+
+#print(json_test[0])
+
+
 #print(events_dict)
 #test = events_dict['RebelutionThe Met PhiladelphiaPhiladelphiaPA2019-07-31T23:00:00']
 #print(test)
 
 #dynamoTable = dynamodb.Table('Event_Table')
 
-#dynamoTable.put_item(
+#for event in events_dict:
+
+#	event_dat = json.loads(events_dict[event])[0]
+#	pprint(event_dat)
 	
-#	Item = events_dict
+#	artist = event_dat['artist']
+#	city = event_dat['city']
+#	date_UTC = event_dat['date_UTC']
+#	name = event_dat['name']
+#	state = event_dat['state']
+#	venue = event_dat['venue']
 	
-#)
+#	highest_price = event_dat['highest_price']
+#	listing_count = event_dat['listing_count']
+#	lowest_price = event_dat['lowest_price']
+#	med_price = event_dat['med_price']
+	
+	
+	#dynamoTable.update_item(
+		
+	#	Item = (
+	#		'Event_ID':event
+	#		'Event_data':
+	#		'Ticket_prices':
+	#	}
+	#)
 
 	
 def SeatGeek_Events():
@@ -234,8 +265,8 @@ def SeatGeek_Events():
 			
 			event_key = spotify_artist + event_venue + event_city + event_state + event_date_UTC
 			
-			event_array = pd.DataFrame([[spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, avg_price, med_price, no_listings]], 
-									   columns =['artist', 'artist_id', 'name', 'ID', 'venue', 'city', 'state', 'date_UTC', 'lowest_price', 'highest_price', 'avg_price', 'med_price', 'listing_count'])
+			event_array = pd.DataFrame([['TEST', spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, avg_price, med_price, no_listings, current_Date]], 
+									   columns =['Event_ID', 'artist', 'artist_id', 'name', 'ID', 'venue', 'city', 'state', 'date_UTC', 'lowest_price', 'highest_price', 'avg_price', 'med_price', 'listing_count', 'create_ts'])
 		
 			event_json = event_array.to_json(orient = 'records')
 		
