@@ -66,15 +66,6 @@ client_secret_str = ('c49766eaad2bc8bc33810d112d141ca9a09b0a78b1be52c459eb19c5fd
 
 dynamodb = boto3.resource('dynamodb')
 dynamoTable = dynamodb.Table('Event_Table')
-dynamoTable.put_item(
-
-	Item = {
-	'Event_ID':'RebelutionThe Met PhiladelphiaPhiladelphiaPA2019-07-31T23:00:00',
-	'Location':'Raleigh',
-	'date_UTC':'2019-08-05 12:00:00'
-	}
-	
-)
 
 
 #----------------------------------------------------------------------#
@@ -106,48 +97,72 @@ Data_Fetch_pymysql()
 
 events_dict = dict()
 
-#with open('C:/Users/wjack/Documents/test.pickle', 'rb') as handle:
-#	events_dict = pickle.load(handle)
 
-#event = events_dict['AtreyuDowntown Las Vegas Events CenterLas VegasNV2019-10-18T10:30:00']
+def dynamo():
+    
+    #with open('C:/Users/wjack/Documents/test.pickle', 'rb') as handle:
+    with open('C:/Users/bswxj01/Documents/test.pickle', 'rb') as handle:
+        events_dict = pickle.load(handle)
+    
+    #event = events_dict['AtreyuDowntown Las Vegas Events CenterLas VegasNV2019-10-18T10:30:00']
+    
+    #json_test = json.loads(event)
+    
+    #print(json_test[0])
+    
+    
+    #print(events_dict)
+    #test = events_dict['RebelutionThe Met PhiladelphiaPhiladelphiaPA2019-07-31T23:00:00']
+    #print(test)
+    
+    dynamoTable = dynamodb.Table('Event_Table')
+    
+    for event in events_dict:
+    
+        event_dat = json.loads(events_dict[event])[0]
+        pprint(event_dat)
 
-#json_test = json.loads(event)
+        artist = event_dat['artist']
+        city = event_dat['city']
+        date_UTC = event_dat['date_UTC']
+        name = event_dat['name']
+        state = event_dat['state']
+        venue = event_dat['venue']
 
-#print(json_test[0])
+        create_ts = event_dat['create_ts']
+        highest_price = event_dat['highest_price']
+        listing_count = event_dat['listing_count']
+        lowest_price = event_dat['lowest_price']
+        med_price = event_dat['med_price']
+        
+        event_dat = {'artist':artist, 'city':city, 'date_UTC':date_UTC, 'name':name, 'state':state, 'venue':venue}
+        price_data = [{'create_ts': create_ts, 'highest_price':highest_price}]
+        price_data2 = [{'create_ts': create_ts, 'highest_price':highest_price}]
 
 
-#print(events_dict)
-#test = events_dict['RebelutionThe Met PhiladelphiaPhiladelphiaPA2019-07-31T23:00:00']
-#print(test)
+        #dynamoTable.put_item(
+        #    Item={
+        #        'Event_ID':event,
+        #        'Event_name':name,
+        #        'Event_data':event_dat,
+        #        'Ticket_prices':price_data
+        #    }
+        #)
+        
+        
+        dynamoTable.update_item(
 
-#dynamoTable = dynamodb.Table('Event_Table')
+            Key = {
+                'Event_ID':event
+            },
+            UpdateExpression="SET Ticket_prices = list_append(Ticket_prices, :i)",
+            ExpressionAttributeValues={
+                    ':i': price_data2
+            }
 
-#for event in events_dict:
-
-#	event_dat = json.loads(events_dict[event])[0]
-#	pprint(event_dat)
-	
-#	artist = event_dat['artist']
-#	city = event_dat['city']
-#	date_UTC = event_dat['date_UTC']
-#	name = event_dat['name']
-#	state = event_dat['state']
-#	venue = event_dat['venue']
-	
-#	highest_price = event_dat['highest_price']
-#	listing_count = event_dat['listing_count']
-#	lowest_price = event_dat['lowest_price']
-#	med_price = event_dat['med_price']
-	
-	
-	#dynamoTable.update_item(
-		
-	#	Item = (
-	#		'Event_ID':event
-	#		'Event_data':
-	#		'Ticket_prices':
-	#	}
-	#)
+        )
+        
+dynamo()
 
 	
 def SeatGeek_Events():
@@ -302,7 +317,11 @@ def SeatGeek_Events():
 			
 	print(event_df)
 	
-	with open('C:/Users/wjack/Documents/test.pickle', 'wb') as handle:
+    #HOPE LAPTOP VERSION#
+	#with open('C:/Users/wjack/Documents/test.pickle', 'wb') as handle:
+    
+    #WORK LAPTOP VERSION#
+    with open('C:/Users/bswxj01/Documents/test.pickle', 'wb') as handle:
 		pickle.dump(events_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
 	
 
