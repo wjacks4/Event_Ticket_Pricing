@@ -97,7 +97,7 @@ Data_Fetch_pymysql()
 
 #events_dict = dict()
 
-def dynamo():
+def dynamo_append():
 
 
 	with open('C:/Users/wjack/Documents/test2.pickle', 'rb') as handle:
@@ -171,7 +171,38 @@ def dynamo():
 		)
 			
 		
-dynamo()
+#dynamo()
+
+
+
+def dynamo_digest():
+
+	dynamoTable = dynamodb.Table('Event_Table')
+	
+	with open('C:/Users/wjack/Documents/test2.pickle', 'rb') as handle:
+		events_dict = pickle.load(handle)	
+	
+	
+	
+	for event in events_dict:
+	
+		print(event)
+		
+		event_json = (dynamoTable.get_item(
+			Key={
+				'Event_ID':event
+			}
+		))['Item']
+		
+		#print(event_json)
+		
+		print(event_json['Event_ID'])
+		print(event_json['Event_name'])
+		print(event_json['Event_data'])
+		print(event_json['Ticket_prices'])
+		
+dynamo_digest()
+
 	
 def SeatGeek_Events():
     
