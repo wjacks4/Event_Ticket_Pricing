@@ -1,14 +1,8 @@
-#-----------------------------------------------------#
-#-----------SEATGEEK API DATA PULL--------------------#
-#-----------------------------------------------------#
-#-----------PURPOSE - FOR EACH ARTIST ON A MAJOR------#
-#---------------------SPOTIFY PLAYLIST, SEARCH FOR----#
-#---------------------THEIR EVENTS ON STUBHUB---------#
-#---------------------AND INSERT ALL RELEVANT DATA----#
-#---------------------INTO AN AWS RDB TABLE-----------#
-#-----------------------------------------------------#
-#----------LAST UPDATED ON 5/9/2019-------------------#
-#-----------------------------------------------------#
+'''
+SEATGEEK API DATA PULL
+
+PURPOSE - TEST
+'''
 
 #!/usr/bin/env python3
 
@@ -201,7 +195,7 @@ def dynamo_digest():
 		print(event_json['Event_data'])
 		print(event_json['Ticket_prices'])
 		
-dynamo_digest()
+#dynamo_digest()
 
 	
 def SeatGeek_Events():

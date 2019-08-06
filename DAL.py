@@ -53,7 +53,12 @@ import requests
 
 import boto3
 
+def test():
 
+	'''
+	blabla
+	:return:
+	'''
 
 
 #----------------------------------------------------------------------#
@@ -103,17 +108,12 @@ class event:
 	dynamodb = boto3.resource('dynamodb')
 	dynamoTable = dynamodb.Table('Event_Table')
 
+
+
 	def __init__(self, artist):
 		self.performer_slug = artist
 		self.current_Date = datetime.now()
 		self.dynamoTable = boto3.resource('dynamodb').Table('Event_Table')
-	
-	def f(self):
-	
-		return('test')
-		return(performer_slug)
-		return(current_Date)
-		print(current_Date)
 		
 	
 	def seatgeek_api(self, artist):
@@ -127,9 +127,9 @@ class event:
 		client_secret_str = ('c49766eaad2bc8bc33810d112d141ca9a09b0a78b1be52c459eb19c5fd3527a5')
 	
 	
-		#----------------------------------------------------------------------#
-		#--------------------THE MEAT - MAKE THE REQUEST-----------------------#
-		#----------------------------------------------------------------------#
+		'''
+		THE MEAT
+		'''
 		
 		try:
 		
@@ -142,8 +142,12 @@ class event:
 
 			print(r.url)
 
-			json_obj = json.loads(r.text)	
-			
+			json_obj = json.loads(r.text)
+
+
+
+			# TODO: consider this dict.get(key[, value])
+
 			try:
 				event_name = json_obj['events'][0]['title']
 				print(event_name)
@@ -220,7 +224,9 @@ class event:
 			#--------------------------------------------------#
 			
 			New_ticket_prices = {'create_ts':self.current_Date, 'lowest_price':lowest_price, 'highest_price':highest_price, 'med_price':med_price, 'listing_count':no_listings}
-			
+
+
+
 			event_json = (self.dynamoTable.get_item(
 				Key={
 					'Event_ID':event_key
@@ -550,7 +556,7 @@ class event:
 		#----------------------------------------------------#
 	
 		#---------ENCODE ARTIST NAMES IN HTML SYNTAX-----------#
-		artist_encode = artist.replace(" ", "%20")
+		artist_encode = self.artist.replace(" ", "%20")
 			
 		#---------------------QUERY PARAMS---------------------#
 		query_params = ("q=" + artist_encode + "&" + "rows=100")		
