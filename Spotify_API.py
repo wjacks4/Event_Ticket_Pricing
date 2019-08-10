@@ -1,14 +1,6 @@
-#-----------------------------------------------------#
-#-----------SPOTIFY API DATA PULL---------------------#
-#-----------------------------------------------------#
-#-----------PURPOSE - FOR EACH MAJOR PLAYLIST---------#
-#---------------------MANUALLY CHOSEN BY YOURS--------#
-#---------------------TRULY, PULL ALL ARTISTS IN------#
-#---------------------THAT PLAYLIST AS WELL AS--------#
-#---------------------FOLLOWERS AND POPULARITY--------#
-#-----------------------------------------------------#
-#----------LAST UPDATED ON 5/9/2019-------------------#
-#-----------------------------------------------------#
+"""
+SPOTIFY API DATA PULL
+"""
 
 #import mysqlclient as mysql
 #from mysql.connector import Error
@@ -25,15 +17,16 @@ import unidecode
 from unidecode import unidecode
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
+import boto3
 from spotipy.client import Spotify
 import requests
 import urllib
 import pymysql
 from urllib import parse
 
-#---------------------------------#
-#----------GLOBAL DATA------------#
-#---------------------------------#
+"""
+GLOBAL DATA
+"""
 
 Spotify_client_ID = 'ab3b70083f5f469188f8e49b79d5eadb'
 Spotify_client_secret = '6ecf81925e2740c9adecaad28685457a'
@@ -41,9 +34,9 @@ Spotify_Playlist_list = pd.read_csv('C:/Users/wjack/Desktop/Event_Ticket_Pricing
 
 
 
-#----------------------------------------------------------------#
-#---GENERATE MY ACCESS TOKEN TO USE THROUGHOUT REST OF PROGRAM---#
-#----------------------------------------------------------------#
+"""
+GENERATE ACCESS TOKEN
+"""
 
 def generate_token():
 	
@@ -60,9 +53,9 @@ generate_token()
 
 
 
-#---------------------------------------------------#
-#---CALL THE SPOTIPY LIBRARY WITH GENERATED TOKEN---#
-#---------------------------------------------------#
+"""
+CALL SPOTIFY API WITH TOKEN
+"""
 
 spotify = spotipy.Spotify(auth=generate_token())
 
@@ -87,55 +80,39 @@ def ID_Gen(name):
 
 	
 	
-	
-#--------------------------------------------------------------------------#
-#--------FUNCTION TO RETURN ARRAY OF ARTISTS FROM A GIVEN PLAYLIST---------#
-#--------------------------------------------------------------------------#
+"""
+FUNCTION TO RETURN LIST OF ARTISTS FROM A GIVEN PLAYLIST
+"""
 def Playlist_Artists(user_in, ID_in):
 
-	#------------------------------------------------------------------------------------------#
-	#--------USE SPOTIPY'S SPOTIFY FUNCTION TO GET TRACKS FROM A SUPPLIED USER & ID------------#
-	#------------------------------------------------------------------------------------------#
+	"""
+	USE SPOTIPY TO GET TRACKS FROM 'USER' PLAYLIST..WHERE 'USER' IS SPOTIFY
+	"""
+
 	raw_dat = spotify.user_playlist_tracks(user = user_in, playlist_id = ID_in)
 	song_list = raw_dat['items']
-	
-	#----CREATE EMPTY DATAFRAME FOR APPENDING LATER----#
+
 	artist_df= pd.DataFrame()
-	
-	
-	#--------------LOOP THROUGH SONGS IN PLAYLIST------------------#
+
 	for song in song_list:
-		
-		#----TRY PULLING ARTIST INFO FOR EVERY SONG IN PLAYLIST, EXCEPT WHEN NO DATA EXISTS---#
+
 		try:
-		
-			#-------------------------------------------#
-			#---GET ARTISTS FROM JSON OBJECT ARTISTS----#
-			#-------------------------------------------#
+
 			artists = song['track']['artists']
-			
-			
-			#----------PULL DETAILED ARTIST INFO FOR EVERY ARTIST ON EVERY TRACK IN PLAYLIST-------#
+
 			for artist in artists:
 				
 				artist_name = unidecode(str( (artist['name'].encode('utf-8')), encoding="utf-8"))
 				artist_ID = str(artist['uri']).replace('spotify:artist:', '')
-	
-				#------USE SPOTIPY'S ARTIST SEARCH FUNCTION TO PULL POPULARITY INFO ON ARTIST------#
+
 				artist_dat = spotify.artist(artist_id = artist_ID)
 				artist_followers = artist_dat['followers']['total']
 				artist_popularity = artist_dat['popularity']
 
-				#-------CREATE A TEMPORARY DATAFRAME FOR EACH ARTIST----------#
 				artist_array = pd.DataFrame([[artist_name, artist_ID, artist_followers, artist_popularity]], columns =['artist_name', 'artist_ID', 'artist_followers', 'artist_popularity'])
 
-				
-				#-------APPEND EACH ARTIST TO MASTER DATAFRAME------#
 				artist_df = artist_df.append(artist_array)
-		
-		
-		
-		#----------JUST ADD A BLANK ROW TO MASTER DF WHEN NO DATA EXISTS--------#
+
 		except TypeError as Err:
 		
 			artist_name = ' ' 
@@ -148,20 +125,22 @@ def Playlist_Artists(user_in, ID_in):
 		
 	return(artist_df)
 
-
 playlist_IDs=pd.DataFrame()
 
 
 		
-#-----------FUNCTION THAT CALLS ID GEN F'N, THEN PLAYLIST_ARTISTS F'N----------#
+"""
+FUCTION THAT CALLS BOTH THE ID GENERATOR FUNCTION AND THE ARTIST PLAYLIST FUNCTION
+"""
 
 def Artists_to_DB():
 
 	playlist_IDs=pd.DataFrame()
 
-	#---------GET PLAYLIST IDS FROM MANUALLY GATHERED SPOTIFY PLAYLIST TABLE------------#
+	"""
+	LOOP THROUGH MANUALLY ENTERED LIST OF SPOTIFY PLAYLISTS, CALLING FUNCTIONS ON EACH PLAYLIST
+	"""
 	for playlist in Spotify_Playlist_list.iterrows():
-
 
 		title=("'" + (playlist[1]['Playlist Name']) + "'")
 		
@@ -176,18 +155,31 @@ def Artists_to_DB():
 		playlist_IDs = playlist_IDs.append(each_Playlist)
 
 
-	#----------CONNECT TO DB------------#
+	"""
+	THIS IS THE MYSQL WAY TO STORE DATA
+	"""
 	connection=pymysql.connect(host = 'ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', user = 'tickets_user', password = 'tickets_pass', db = 'tickets_db')
 	cursor=connection.cursor()
-	
-	#-----------DELETE RECORDS FROM TABLE BEFORE ADD----------------#
+
 	delete_QL = 'DELETE FROM Artists_expanded;'
 	
 	cursor.execute(delete_QL)
 	connection.commit()
 	
-	#--------------GET DETAILED ARTIST INFO FOR EVERY PLAYLIST WE NOW HAVE IDS FOR------------#
-	for playlist_ID in playlist_IDs.iterrows():
+
+
+	"""
+	AND THE DYNAMODB WAY TO STORE DATA
+	"""
+	dynamodb = boto3.resource('dynamodb')
+	dynamoTable = dynamodb.Table('Artist_Table')
+
+
+
+	"""
+	LOOP THRU DATA AND STORE IN EACH RESPECTIVE SYSTEM
+	"""
+	for playlist_ID in playlist_IDs.head(5).iterrows():
 		
 		each_Name = ((playlist_ID[1]['playlist_Name']))
 		each_genre = ((playlist_ID[1]['genre']))
@@ -197,16 +189,36 @@ def Artists_to_DB():
 		Artists_df = Playlist_Artists(each_User, each_ID)
 		
 		for artist in Artists_df.iterrows():
-			
+
+			"""
+			MYSQL DATA PREP AND INSERTION
+			"""
 			artist_name = ((artist[1]['artist_name'])).replace('"', ' ')
 			id = ((artist[1]['artist_ID']))
 			followers = ((artist[1]['artist_followers']))
 			popularity = ((artist[1]['artist_popularity']))
-			
-			artist_QL = 'INSERT INTO Artists_expanded(artist, genre, followers, popularity, playlist, artist_id) VALUES ("%s", "%s", "%s", "%s", "%s", "%s");' %(artist_name, each_genre, followers, popularity, each_Name, id)
 
-			cursor.execute(artist_QL)
-			connection.commit()			
+			# artist_QL = 'INSERT INTO Artists_expanded(artist, genre, followers, popularity, playlist, artist_id) VALUES ("%s", "%s", "%s", "%s", "%s", "%s");' %(artist_name, each_genre, followers, popularity, each_Name, id)
+			#
+			# cursor.execute(artist_QL)
+			# connection.commit()
+
+			"""
+			DYNAMO DATA INSERTION
+			"""
+			artist_dat = { 'artist':((artist[1]['artist_name'])).replace('"', ' '),  'genre':each_genre, 'playlist':each_Name,  'artist_id':(artist[1]['artist_ID']),   'followers':(artist[1]['artist_followers']), 'popularity':(artist[1]['artist_popularity']) }
+			print(artist_dat)
+
+			dynamoTable.put_item(
+
+				Item = {
+					'artist_id' : artist_dat['artist_id'],
+					'artist' : artist_dat['artist'],
+					'genre' : artist_dat['genre'],
+					'followers' : artist_dat['followers'],
+					'popularity' : artist_dat['popularity']
+				}
+			)
 
 Artists_to_DB()
 
@@ -226,7 +238,7 @@ def Artist_trim ():
 	cursor.execute(drop_QL)
 	cursor.execute(create_QL)
 
-	connection.commit()			
+	connection.commit()
 
  
 	
