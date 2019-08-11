@@ -206,7 +206,7 @@ def stubhub_event_pull():
 	connection = pymysql.connect('ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', 'tickets_user', 'tickets_pass', 'tickets_db')
 	cursor = connection.cursor()
 
-	artists_df = data_fetch_pymysql().head(1)['artist']
+	artists_df = data_fetch_pymysql().head(200)['artist']
 
 	base_url = 'https://api.stubhub.com/sellers/search/events/v3'
 
