@@ -1,16 +1,9 @@
-#-----------------------------------------------------#
-#-----------STUBHUB API DATA PULL---------------------#
-#-----------------------------------------------------#
-#-----------PURPOSE - FOR EACH ARTIST ON A MAJOR------#
-#---------------------SPOTIFY PLAYLIST, SEARCH FOR----#
-#---------------------THEIR EVENTS ON STUBHUB---------#
-#---------------------AND INSERT ALL RELEVANT DATA----#
-#---------------------INTO AN AWS RDB TABLE-----------#
-#-----------------------------------------------------#
-#----------LAST UPDATED ON 5/9/2019-------------------#
-#-----------------------------------------------------#
+"""
 
-#!/usr/bin/env python3
+STUBHUB API DATA PULL
+
+
+"""
 
 #import mysql
 #from mysql.connector import Error
@@ -45,9 +38,9 @@ import boto3
 current_Date = datetime.now()
 print('THIS PROGRAM RAN AT ' + str(current_Date))
 
-#-------------------------------------------------------------#
-#---------------WE GOT THE MF STUBHUB API BOIII---------------#
-#-------------------------------------------------------------#
+"""
+DEFINE STUBHUB ACCESS KEYS / CODES
+"""
 
 Stubhub_Key_1 = b'VOU4xvGfhGO9qpVxGo3SABeebnpTmAJw'
 Stubhub_Secret_1 = b'RR2tFwHG7Pinv4ik'
@@ -93,198 +86,162 @@ Cat_Key_encode_5 = base64.standard_b64encode(Cat_Key_Secret_5)
 print(Cat_Key_encode_5)
 
 
-#----------------------------------------------------------------------#
-#---------------------GET ARTIST LIST FROM MYSQL DB--------------------#
-#----------------------------------------------------------------------#
-
-def Data_Fetch_pymysql():
-
-    #Fetch_QL = 'SELECT * FROM ARTISTS_ONLY;'
-    
-    #USING pymysql#
-    connection = pymysql.connect (host = 'ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com',
-                                  user = 'tickets_user',
-                                  password = 'tickets_pass',
-                                  db = 'tickets_db')
-    
-    Fetch_QL = 'SELECT * FROM Artists_expanded;'
-    cursor = connection.cursor()
-    Artists_DF = pd.read_sql('SELECT * FROM ARTISTS_WITH_EVENTS order by current_followers desc', con = connection)  
-    return Artists_DF
-
-Data_Fetch_pymysql()
+"""
+GET ARTIST LIST FROM SYNTHESIZED STUBHUB / SPOTIFY TABLE THAT TARGETS ARTISTS W/ EVENTS
+"""
 
 
+def data_fetch_pymysql():
 
-def Get_Access_Token_1():
+	connection = pymysql.connect(host='ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com',
+										user='tickets_user',
+										password='tickets_pass',
+										db='tickets_db')
+	cursor = connection.cursor()
+	artists_df = pd.read_sql('SELECT * FROM ARTISTS_WITH_EVENTS order by current_followers desc', con=connection)
+	return artists_df
 
-	#-------DEFINE URL BUILDING BLOCKS------#
+
+data_fetch_pymysql()
+
+
+def get_access_token_1():
+
 	base_url = 'https://api.stubhub.com/sellers/oauth/accesstoken'
 	query_params = 'grant_type=client_credentials'
-	
-	#-----BUILD URL FOR REQUEST-----#
+
 	request_url = (base_url + "?" + query_params)
-	
-	#-------ADD ON ADDITIONAL DATA TO URL REQUEST-----#
-	payload = {"username":"wjacks4@g.clemson.edu", "password":"Hester3123"}
-	headers = {"Authorization": "Basic Vk9VNHh2R2ZoR085cXBWeEdvM1NBQmVlYm5wVG1BSnc6UlIydEZ3SEc3UGludjRpaw==", "Content-Type": "application/json"}
-	
+
+	payload = {"username": "wjacks4@g.clemson.edu", "password": "Hester3123"}
+	headers = {"Authorization": "Basic Vk9VNHh2R2ZoR085cXBWeEdvM1NBQmVlYm5wVG1BSnc6UlIydEZ3SEc3UGludjRpaw==",
+												"Content-Type": "application/json"}
+
 	req = requests.post(request_url, data=json.dumps(payload), headers=headers)
 	json_obj = req.json()
 	token = json_obj['access_token']
-	
+
 	print(token)
-	return (token)
-	
-#Get_Access_Token_1()
+	return token
 
-def Get_Access_Token_2():
 
-	#-------DEFINE URL BUILDING BLOCKS------#
+def get_access_token_2():
+
 	base_url = 'https://api.stubhub.com/sellers/oauth/accesstoken'
 	query_params = 'grant_type=client_credentials'
-	
-	#-----BUILD URL FOR REQUEST-----#
+
 	request_url = (base_url + "?" + query_params)
-	
-	#-------ADD ON ADDITIONAL DATA TO URL REQUEST-----#
-	payload = {"username":"hiltonsounds@gmail.com", "password":"Hester3123"}
-	headers = {"Authorization": "Basic ZDlmV0h0UXZzMzRjQWViZGZBekRUQ09mNkRMbjlObTc6MTFVQTV2S1NRdVp6amI0bQ==", "Content-Type": "application/json"}
-	
+
+	payload = {"username": "hiltonsounds@gmail.com", "password": "Hester3123"}
+	headers = {"Authorization": "Basic ZDlmV0h0UXZzMzRjQWViZGZBekRUQ09mNkRMbjlObTc6MTFVQTV2S1NRdVp6amI0bQ==",
+												"Content-Type": "application/json"}
+
 	req = requests.post(request_url, data=json.dumps(payload), headers=headers)
 	json_obj = req.json()
 	token = json_obj['access_token']
-	
+
 	print(token)
-	return (token)
-	
-#Get_Access_Token_2()
+	return token
 
-def Get_Access_Token_3():
 
-	#-------DEFINE URL BUILDING BLOCKS------#
+def get_access_token_3():
+
 	base_url = 'https://api.stubhub.com/sellers/oauth/accesstoken'
 	query_params = 'grant_type=client_credentials'
-	
-	#-----BUILD URL FOR REQUEST-----#
+
 	request_url = (base_url + "?" + query_params)
-	
-	#-------ADD ON ADDITIONAL DATA TO URL REQUEST-----#
+
 	payload = {"username":"edenk@g.clemson.edu", "password":"Hester3123"}
-	headers = {"Authorization": "Basic ZDlmV0h0UXZzMzRjQWViZGZBekRUQ09mNkRMbjlObTc6MTFVQTV2S1NRdVp6amI0bQ==", "Content-Type": "application/json"}
-	
+	headers = {"Authorization": "Basic ZDlmV0h0UXZzMzRjQWViZGZBekRUQ09mNkRMbjlObTc6MTFVQTV2S1NRdVp6amI0bQ==",
+												"Content-Type": "application/json"}
+
 	req = requests.post(request_url, data=json.dumps(payload), headers=headers)
 	json_obj = req.json()
 	token = json_obj['access_token']
-	
+
 	print(token)
-	return (token)
-	
-#Get_Access_Token_3()
+	return token
 
 
+def get_access_token_4():
 
-def Get_Access_Token_4():
-
-	#-------DEFINE URL BUILDING BLOCKS------#
 	base_url = 'https://api.stubhub.com/sellers/oauth/accesstoken'
 	query_params = 'grant_type=client_credentials'
-	
-	#-----BUILD URL FOR REQUEST-----#
+
 	request_url = (base_url + "?" + query_params)
-	
-	#-------ADD ON ADDITIONAL DATA TO URL REQUEST-----#
-	payload = {"username":"butteredtoast66@gmail.com", "password":"Hester3123"}
-	headers = {"Authorization": "Basic ajBlTjIyU0FwRjYzY3pZM3pjanY3d1g1U0VEOTZGUkY6OXVneUpKN3BHQUdvdVJKQQ==", "Content-Type": "application/json"}
-	
+
+	payload = {"username": "butteredtoast66@gmail.com", "password": "Hester3123"}
+	headers = {"Authorization": "Basic ajBlTjIyU0FwRjYzY3pZM3pjanY3d1g1U0VEOTZGUkY6OXVneUpKN3BHQUdvdVJKQQ==",
+												"Content-Type": "application/json"}
+
 	req = requests.post(request_url, data=json.dumps(payload), headers=headers)
 	json_obj = req.json()
 	token = json_obj['access_token']
-	
+
 	print(token)
-	return (token)
-	
-#Get_Access_Token_4()
+	return token
 
 
-def Get_Access_Token_5():
+def get_access_token_5():
 
-	#-------DEFINE URL BUILDING BLOCKS------#
 	base_url = 'https://api.stubhub.com/sellers/oauth/accesstoken'
 	query_params = 'grant_type=client_credentials'
-	
-	#-----BUILD URL FOR REQUEST-----#
+
 	request_url = (base_url + "?" + query_params)
-	
-	#-------ADD ON ADDITIONAL DATA TO URL REQUEST-----#
-	payload = {"username":"sunglassman3123@gmail.com", "password":"Hester3123"}
-	headers = {"Authorization": "Basic VmhEdEZDMlVFOG9RdEJwWUxtaFdoejkzMUZSUGZqc246eTJRanVySkgybm1jS050NA==", "Content-Type": "application/json"}
-	
+
+	payload = {"username": "sunglassman3123@gmail.com", "password": "Hester3123"}
+	headers = {"Authorization": "Basic VmhEdEZDMlVFOG9RdEJwWUxtaFdoejkzMUZSUGZqc246eTJRanVySkgybm1jS050NA==",
+												"Content-Type": "application/json"}
+
 	req = requests.post(request_url, data=json.dumps(payload), headers=headers)
 	json_obj = req.json()
 	print(json_obj)
 	token = json_obj['access_token']
-	
+
 	print(token)
-	return (token)
-	
-#Get_Access_Token_5()
-			
+	return token
 
-	
-def STUBHUB_EVENT_PULL():
-    
-	#--------DEFINE THE SQL DB CONNECTION (MYSQLDB)-------#
-	connection=pymysql.connect('ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', 'tickets_user', 'tickets_pass', 'tickets_db')
-	cursor=connection.cursor()
 
-	#---------SELECT A SMALL SUBSET OF THE ARTIST DATAFRAME----------#
-	Artists_df = Data_Fetch_pymysql().head(200)
-	#Artists_df = Data_Fetch_pymysql().head(20)
+def stubhub_event_pull():
 
-	#---------DEFINE URL BUILDING BLOCKS-------#
+	connection = pymysql.connect('ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', 'tickets_user', 'tickets_pass', 'tickets_db')
+	cursor = connection.cursor()
+
+	artists_df = data_fetch_pymysql().head(1)['artist']
+
 	base_url = 'https://api.stubhub.com/sellers/search/events/v3'
 
-	#------------------GET ARTIST LIST FROM DF----------------#
-	artists = Artists_df['artist']
-
-	#-----------GET CURRENT DATETIME FOR TIMESTAMP ADD------------#
-	current_Date = datetime.now()
+	current_date = datetime.now()
 	
 	i = 1
 
-	#--------------------LOOP THRU ARTISTS--------------------#
-	#for artist in artists:	
-	for artist_dat in Artists_df.iterrows():
-        
-		#-----------EXTRACT ARTIST FROM THE ROW------------------#
-		spotify_artist = artist_dat[1]['artist']
-		spotify_artist_id = artist_dat[1]['artist_id']
+	"""
+	AND THE DYNAMODB WAY TO STORE DATA
+	"""
+	dynamodb = boto3.resource('dynamodb')
+	dynamotable = dynamodb.Table('Stubhub_Event_Table')
 
-		#---------ENCODE ARTIST NAMES IN HTML SYNTAX-----------#
-		artist_encode = spotify_artist.replace(" ", "%20")
-			
-		#---------------------QUERY PARAMS---------------------#
+	"""
+	LOOP THRU ARTISTS
+	"""
+	for artist in artists_df:
+
+		artist_encode = artist.replace(" ", "%20")
+
 		query_params = ("q=" + artist_encode + "&" + "rows=100")		
-			
-		#---------BUILD THE URL TO REQUEST DATA FROM-----------#
+
 		artist_url = (base_url + "?" + query_params)
-			
-		#print(artist_url)
-		#--------------ADD HEADERS & MAKE REQUEST----------------#
 		
-		if i <=40:
-#		if i <=4:
+		if i <= 40:
 		
 			print(i)
 			try:
 			
-				Auth_Header = ("Bearer " + Get_Access_Token_1())
-				headers = {"Authorization": Auth_Header, "Accept": "application/json"}
+				auth_header = ("Bearer " + get_access_token_1())
+				headers = {"Authorization": auth_header, "Accept": "application/json"}
 				req = requests.get(artist_url, headers=headers)
 				json_obj = req.json()
 
-				#print(json_obj)
+				# print(json_obj)
 							
 				event_list = json_obj['events']
 
@@ -293,48 +250,78 @@ def STUBHUB_EVENT_PULL():
 					event_name = event['name']
 					
 					if 'PARKING' not in event_name:
+
+						"""
+						MYSQL WAY
+						"""
 						print(event_name)
 						event_id = str(event['id'])
-						event_venue= event['venue']['name']
+						event_venue = event['venue']['name']
 						event_city = event['venue']['city']
 						event_state = event['venue']['state']
 						event_date_str = (event['eventDateUTC']).replace("T", " ")
-						event_date_cut= event_date_str[:19]
+						event_date_cut = event_date_str[:19]
 						event_date_UTC = datetime.strptime(event_date_cut, '%Y-%m-%d %H:%M:%S')
 						lowest_price = event['ticketInfo']['minListPrice']
 						highest_price = event['ticketInfo']['maxListPrice']
 						ticket_count = event['ticketInfo']['totalTickets']
 						listing_count = event['ticketInfo']['totalListings']
 						
-						event_array = pd.DataFrame([[spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count]], 
-									  columns =['artist', 'artist_id', 'name', 'ID', 'venue', 'city', 'state', 'date_UTC', 'lowest_price', 'highest_price', 'ticket_count', 'listing_count'])
+						event_array = pd.DataFrame([[artist, '', event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count]],
+													columns=['artist', 'artist_id', 'name', 'ID', 'venue', 'city', 'state', 'date_UTC', 'lowest_price', 'highest_price', 'ticket_count', 'listing_count'])
 
-						insert_tuple = (spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count, current_Date)
+						insert_tuple = (artist, '', event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count, current_date)
 						
-						event_QL = 'INSERT INTO `STUBHUB_EVENTS` (`artist`, `artist_id`, `name`, `id`, `venue`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `ticket_count`, `listing_count`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'                       
+						event_ql = 'INSERT INTO `STUBHUB_EVENTS` (`artist`, `artist_id`, `name`, `id`, `venue`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `ticket_count`, `listing_count`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
 
-						result  = cursor.execute(event_QL, insert_tuple)
+						result = cursor.execute(event_ql, insert_tuple)
 						connection.commit()
+
+
+						"""
+						DYNAMODB WAY
+						"""
+						venue_dict = event['venue']
+						price_dict = event['ticketInfo']
+
+						event_key = artist + venue_dict['name'] + venue_dict['city'] + venue_dict['state'] + str(
+							event['eventDateUTC']).replace("T", " ")
+
+						dynamotable.put_item(
+
+							Item={
+								'Event_ID': event_key,
+								'name': event['name'],
+								'artist': artist,
+								'city': venue_dict['city'],
+								'date_UTC': str(event['eventDateUTC']).replace("T", " "),
+								'state': venue_dict['state'],
+								'venue': venue_dict['name'],
+								'create_ts': str(current_date),
+								'lowest_price': int(price_dict['minListPrice']),
+								'highest_price': int(price_dict['maxListPrice']),
+								'ticket_count': int(price_dict['totalTickets']),
+								'listing_count': int(price_dict['totalListings'])
+							}
+						)
 
 			except KeyError as Overload:
 			
 				print(KeyError)
 				print('exceeded quota for stubhub API')
-				
-				
-		elif i > 40 and i <= 80:
-#		elif i > 4 and i <=8:
-		
+
+		elif 40 < i <= 80:
+
 			print(i)
 
 			try:
 		
-				Auth_Header = ("Bearer " + Get_Access_Token_2())
-				headers = {"Authorization": Auth_Header, "Accept": "application/json"}
+				auth_header = ("Bearer " + get_access_token_2())
+				headers = {"Authorization": auth_header, "Accept": "application/json"}
 				req = requests.get(artist_url, headers=headers)
 				json_obj = req.json()
 
-				#print(json_obj)
+				# print(json_obj)
 							
 				event_list = json_obj['events']
 
@@ -356,35 +343,61 @@ def STUBHUB_EVENT_PULL():
 						ticket_count = event['ticketInfo']['totalTickets']
 						listing_count = event['ticketInfo']['totalListings']
 						
-						event_array = pd.DataFrame([[spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count]], 
-									  columns =['artist', 'artist_id', 'name', 'ID', 'venue', 'city', 'state', 'date_UTC', 'lowest_price', 'highest_price', 'ticket_count', 'listing_count'])
+						event_array = pd.DataFrame([[artist, '', event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count]],
+										columns=['artist', 'artist_id', 'name', 'ID', 'venue', 'city', 'state', 'date_UTC', 'lowest_price', 'highest_price', 'ticket_count', 'listing_count'])
 
-						insert_tuple = (spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count, current_Date)
+						insert_tuple = (artist, '', event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count, current_Date)
 						
-						event_QL = 'INSERT INTO `STUBHUB_EVENTS` (`artist`, `artist_id`, `name`, `id`, `venue`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `ticket_count`, `listing_count`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'                       
+						event_ql = 'INSERT INTO `STUBHUB_EVENTS` (`artist`, `artist_id`, `name`, `id`, `venue`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `ticket_count`, `listing_count`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
 
-						result  = cursor.execute(event_QL, insert_tuple)
+						result = cursor.execute(event_ql, insert_tuple)
 						connection.commit()
+
+
+						"""
+						DYNAMODB WAY
+						"""
+						venue_dict = event['venue']
+						price_dict = event['ticketInfo']
+
+						event_key = artist + venue_dict['name'] + venue_dict['city'] + venue_dict['state'] + str(
+							event['eventDateUTC']).replace("T", " ")
+
+						dynamotable.put_item(
+
+							Item={
+								'Event_ID': event_key,
+								'name': event['name'],
+								'artist': artist,
+								'city': venue_dict['city'],
+								'date_UTC': str(event['eventDateUTC']).replace("T", " "),
+								'state': venue_dict['state'],
+								'venue': venue_dict['name'],
+								'create_ts': str(current_date),
+								'lowest_price': int(price_dict['minListPrice']),
+								'highest_price': int(price_dict['maxListPrice']),
+								'ticket_count': int(price_dict['totalTickets']),
+								'listing_count': int(price_dict['totalListings'])
+							}
+						)
 					
 			except KeyError as Overload:
 		
 				print(KeyError)
 				print('exceeded quota for stubhub API')	
 
-			
-		elif i > 80 and i <= 120:
-#		elif i > 8 and i <=12:
+		elif 80 < i <= 120:
 		
 			print(i)
 
 			try:
 		
-				Auth_Header = ("Bearer " + Get_Access_Token_3())
-				headers = {"Authorization": Auth_Header, "Accept": "application/json"}
+				auth_header = ("Bearer " + get_access_token_3())
+				headers = {"Authorization": auth_header, "Accept": "application/json"}
 				req = requests.get(artist_url, headers=headers)
 				json_obj = req.json()
 
-				#print(json_obj)
+				# print(json_obj)
 							
 				event_list = json_obj['events']
 
@@ -406,37 +419,64 @@ def STUBHUB_EVENT_PULL():
 						ticket_count = event['ticketInfo']['totalTickets']
 						listing_count = event['ticketInfo']['totalListings']
 						
-						event_array = pd.DataFrame([[spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count]], 
-									  columns =['artist', 'artist_id', 'name', 'ID', 'venue', 'city', 'state', 'date_UTC', 'lowest_price', 'highest_price', 'ticket_count', 'listing_count'])
+						event_array = pd.DataFrame([[artist, '', event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count]],
+										columns=['artist', 'artist_id', 'name', 'ID', 'venue', 'city', 'state', 'date_UTC', 'lowest_price', 'highest_price', 'ticket_count', 'listing_count'])
 
-						insert_tuple = (spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count, current_Date)
+						insert_tuple = (artist, '', event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count, current_Date)
 						
-						event_QL = 'INSERT INTO `STUBHUB_EVENTS` (`artist`, `artist_id`, `name`, `id`, `venue`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `ticket_count`, `listing_count`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'                       
+						event_ql = 'INSERT INTO `STUBHUB_EVENTS` (`artist`, `artist_id`, `name`, `id`, `venue`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `ticket_count`, `listing_count`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
 
-						result  = cursor.execute(event_QL, insert_tuple)
+						result = cursor.execute(event_ql, insert_tuple)
 						connection.commit()
+
+
+						"""
+						DYNAMODB WAY
+						"""
+						venue_dict = event['venue']
+						price_dict = event['ticketInfo']
+
+						print(price_dict['totalTickets'])
+						print(price_dict['totalListings'])
+
+						event_key = artist + venue_dict['name'] + venue_dict['city'] + venue_dict['state'] + str(
+							event['eventDateUTC']).replace("T", " ")
+
+						dynamotable.put_item(
+
+							Item={
+								'Event_ID': event_key,
+								'name': event['name'],
+								'artist': artist,
+								'city': venue_dict['city'],
+								'date_UTC': str(event['eventDateUTC']).replace("T", " "),
+								'state': venue_dict['state'],
+								'venue': venue_dict['name'],
+								'create_ts': str(current_date),
+								'lowest_price': int(price_dict['minListPrice']),
+								'highest_price': int(price_dict['maxListPrice']),
+								'ticket_count': int(price_dict['totalTickets']),
+								'listing_count': int(price_dict['totalListings'])
+							}
+						)
 
 			except KeyError as Overload:
 		
 				print(KeyError)
 				print('exceeded quota for stubhub API')	
 
-			
-		elif i > 120 and i<=160:
-#		elif i > 12 and i <=16:
-		
+		elif 120 < i <= 160:
 		
 			print(i)
 
-
 			try:
 		
-				Auth_Header = ("Bearer " + Get_Access_Token_4())
-				headers = {"Authorization": Auth_Header, "Accept": "application/json"}
+				auth_header = ("Bearer " + get_access_token_4())
+				headers = {"Authorization": auth_header, "Accept": "application/json"}
 				req = requests.get(artist_url, headers=headers)
 				json_obj = req.json()
 
-				#print(json_obj)
+				# print(json_obj)
 							
 				event_list = json_obj['events']
 
@@ -457,15 +497,44 @@ def STUBHUB_EVENT_PULL():
 						ticket_count = event['ticketInfo']['totalTickets']
 						listing_count = event['ticketInfo']['totalListings']
 						
-						event_array = pd.DataFrame([[spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count]], 
-									  columns =['artist', 'artist_id', 'name', 'ID', 'venue', 'city', 'state', 'date_UTC', 'lowest_price', 'highest_price', 'ticket_count', 'listing_count'])
+						event_array = pd.DataFrame([[artist, '', event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count]],
+										columns=['artist', 'artist_id', 'name', 'ID', 'venue', 'city', 'state', 'date_UTC', 'lowest_price', 'highest_price', 'ticket_count', 'listing_count'])
 
-						insert_tuple = (spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count, current_Date)
+						insert_tuple = (artist, '', event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count, current_Date)
 						
-						event_QL = 'INSERT INTO `STUBHUB_EVENTS` (`artist`, `artist_id`, `name`, `id`, `venue`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `ticket_count`, `listing_count`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'                       
+						event_ql = 'INSERT INTO `STUBHUB_EVENTS` (`artist`, `artist_id`, `name`, `id`, `venue`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `ticket_count`, `listing_count`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
 
-						result  = cursor.execute(event_QL, insert_tuple)
+						result = cursor.execute(event_ql, insert_tuple)
 						connection.commit()
+
+
+
+						"""
+						DYNAMODB WAY
+						"""
+						venue_dict = event['venue']
+						price_dict = event['ticketInfo']
+
+						event_key = artist + venue_dict['name'] + venue_dict['city'] + venue_dict['state'] + str(
+							event['eventDateUTC']).replace("T", " ")
+
+						dynamotable.put_item(
+
+							Item={
+								'Event_ID': event_key,
+								'name': event['name'],
+								'artist': artist,
+								'city': venue_dict['city'],
+								'date_UTC': str(event['eventDateUTC']).replace("T", " "),
+								'state': venue_dict['state'],
+								'venue': venue_dict['name'],
+								'create_ts': str(current_date),
+								'lowest_price': int(price_dict['minListPrice']),
+								'highest_price': int(price_dict['maxListPrice']),
+								'ticket_count': int(price_dict['totalTickets']),
+								'listing_count': int(price_dict['totalListings'])
+							}
+						)
 
 			except KeyError as Overload:
 		
@@ -478,12 +547,12 @@ def STUBHUB_EVENT_PULL():
 
 			try:
 		
-				Auth_Header = ("Bearer " + Get_Access_Token_5())
-				headers = {"Authorization": Auth_Header, "Accept": "application/json"}
+				auth_header = ("Bearer " + get_access_token_5())
+				headers = {"Authorization": auth_header, "Accept": "application/json"}
 				req = requests.get(artist_url, headers=headers)
 				json_obj = req.json()
 
-				#print(json_obj)
+				# print(json_obj)
 							
 				event_list = json_obj['events']
 
@@ -504,32 +573,53 @@ def STUBHUB_EVENT_PULL():
 						ticket_count = event['ticketInfo']['totalTickets']
 						listing_count = event['ticketInfo']['totalListings']
 						
-						event_array = pd.DataFrame([[spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count]], 
-									  columns =['artist', 'artist_id', 'name', 'ID', 'venue', 'city', 'state', 'date_UTC', 'lowest_price', 'highest_price', 'ticket_count', 'listing_count'])
+						event_array = pd.DataFrame([[artist, '', event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count]],
+										columns=['artist', 'artist_id', 'name', 'ID', 'venue', 'city', 'state', 'date_UTC', 'lowest_price', 'highest_price', 'ticket_count', 'listing_count'])
 
-						insert_tuple = (spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count, current_Date)
+						insert_tuple = (artist, '', event_name, event_id, event_venue, event_city, event_state, event_date_UTC, lowest_price, highest_price, ticket_count, listing_count, current_Date)
 						
-						event_QL = 'INSERT INTO `STUBHUB_EVENTS` (`artist`, `artist_id`, `name`, `id`, `venue`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `ticket_count`, `listing_count`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'                       
+						event_ql = 'INSERT INTO `STUBHUB_EVENTS` (`artist`, `artist_id`, `name`, `id`, `venue`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `ticket_count`, `listing_count`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
 
-						result  = cursor.execute(event_QL, insert_tuple)
+						result = cursor.execute(event_ql, insert_tuple)
 						connection.commit()
+
+
+						"""
+						DYNAMODB WAY
+						"""
+						venue_dict = event['venue']
+						price_dict = event['ticketInfo']
+
+						event_key = artist + venue_dict['name'] + venue_dict['city'] + venue_dict['state'] + str(
+							event['eventDateUTC']).replace("T", " ")
+
+						dynamotable.put_item(
+
+							Item={
+								'Event_ID': event_key,
+								'name': event['name'],
+								'artist': artist,
+								'city': venue_dict['city'],
+								'date_UTC': str(event['eventDateUTC']).replace("T", " "),
+								'state': venue_dict['state'],
+								'venue': venue_dict['name'],
+								'create_ts': str(current_date),
+								'lowest_price': int(price_dict['minListPrice']),
+								'highest_price': int(price_dict['maxListPrice']),
+								'ticket_count': int(price_dict['totalTickets']),
+								'listing_count': int(price_dict['totalListings'])
+							}
+						)
 
 			except KeyError as Overload:
 
 				print(KeyError)
-				print('exceeded quota for stubhub API')	
-
+				print('exceeded quota for stubhub API')
 
 		i = i+1
-               
-STUBHUB_EVENT_PULL()
 
 
-
-
-				
-				
-				
+stubhub_event_pull()
 				
 				
 				

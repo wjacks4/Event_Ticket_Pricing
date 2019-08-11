@@ -1,7 +1,5 @@
 """
-FIGURE OUT HOW TO PICKLE FILES INTO S3
-
-PURPOSE - TEST
+PUT DATA FROM SEATGEEK API INTO DYNAMODB
 """
 
 import json
@@ -77,29 +75,24 @@ def data_fetch_dynamo():
 
 
 """
-PULL BACK DYNAMO DB DATA
+GET DATA FROM SEATGEEK API, SEND TO DYNAMODB
 """
-
-base_url = ('https://api.seatgeek.com/2/')
-client_id_str = ('MTM4MTIyMDZ8MTU1NDQ3MTkxMy43Ng')
-client_secret_str = ('c49766eaad2bc8bc33810d112d141ca9a09b0a78b1be52c459eb19c5fd3527a5')
 
 
 def seatgeek_events():
 
-    artists_df = data_fetch_pymysql().head(1)['artist']
+    artists_df = data_fetch_pymysql()['artist']
 
     """CURRENT DATE ASSIGNMENT"""
     current_date = datetime.now()
 
-    """INCREMENTING VARIABLE"""
-    i = 1
-
-    """BEGIN BUILDING DATAFRAME FROM JSON"""
-    event_df = pd.DataFrame()
+    """
+    AND THE DYNAMODB WAY TO STORE DATA
+    """
+    dynamodb = boto3.resource('dynamodb')
+    dynamoTable = dynamodb.Table('Event_Table')
 
     """LOOP THRU ARTISTS"""
-    # for artist in artists:
     for artist in artists_df:
 
         """DEFINE PERFORMER SLUG VARIABLE"""
@@ -108,16 +101,15 @@ def seatgeek_events():
 
         # print(performer_slug)
 
-
         try:
             url = 'https://api.seatgeek.com/2/events?format=json'
-            payload = {'per_page': 1,
+            payload = {'per_page': 20,
                        'performers.slug': performer_slug,
                        'client_id': client_id_str,
                        }
             r = requests.get(url, params=payload, verify=True)
 
-            print(r.url)
+            # print(r.url)
 
             json_obj = json.loads(r.text)
 
@@ -126,22 +118,33 @@ def seatgeek_events():
             event_list = json_obj['events']
 
             for event in event_list:
-                summ_data = event
-                venue_data = summ_data['venue']
-                venue_data = summ_data.get('venue')
 
-                price_data = summ_data['stats']
+                venue_dict = event['venue']
+                price_dict = event['stats']
 
-                event_dict = {'name': [summ_data['title']], 'id': [summ_data['id']],
-                              'datetime_utc': [summ_data['datetime_utc']], 'venue': [venue_data['name']], 'capacity':[venue_data['capacity']]
-                              'city': [venue_data['city']], 'state': [venue_data['state']],
-                              'avg_price': [price_data['average_price']], 'median_price': [price_data['median_price']],
-                              'lowest_price': [price_data['lowest_price']],
-                              'highest_price': [price_data['highest_price']],
-                              'no_listing': [price_data['listing_count']], 'create_ts': [current_date]}
-                print(event_dict)
+                event_key = artist + venue_dict['name'] + venue_dict['city'] + venue_dict['state'] + event['datetime_utc']
 
-                test_df = pd.DataFrame.from_dict(event_dict)
+                # static_data = {'name': event['title'], 'artist': artist, 'city': venue_dict['city'], 'date_UTC': event['datetime_utc'], 'state': venue_dict['state'],
+                #               'venue': venue_dict['name'], 'capacity': venue_dict['capacity']}
+                #
+                # price_data = [{'create_ts': current_date, 'lowest_price': price_dict['lowest_price'], 'highest_price': price_dict['highest_price'],
+                #                'med_price': price_dict['median_price'], 'listing_count': price_dict['listing_count']}]
+                #
+                # event_data = [{'event_id': event_key, 'name': event['title'], 'artist': artist, 'city': venue_dict['city'], 'date_UTC': event['datetime_utc'], 'state': venue_dict['state'],
+                #               'venue': venue_dict['name'], 'capacity': venue_dict['capacity'], 'create_ts': current_date, 'lowest_price': price_dict['lowest_price'], 'highest_price': price_dict['highest_price'],
+                #                'med_price': price_dict['median_price'], 'avg_price': price_dict['average_price'], 'listing_count': price_dict['listing_count']}]
+
+                dynamoTable.put_item(
+
+                    Item = {
+                        'Event_ID': event_key, 'name': event['title'], 'artist': artist, 'city': venue_dict['city'],
+                        'date_UTC': str(event['datetime_utc']), 'state': venue_dict['state'],
+                        'venue': venue_dict['name'], 'capacity': venue_dict['capacity'], 'create_ts': str(current_date),
+                        'lowest_price': price_dict['lowest_price'], 'highest_price': price_dict['highest_price'],
+                        'med_price': price_dict['median_price'], 'avg_price': price_dict['average_price'],
+                        'listing_count': price_dict['listing_count']
+                    }
+                )
 
 
         except IndexError as e:
@@ -149,5 +152,22 @@ def seatgeek_events():
             print('NO RELATED SEATGEEK EVENTS')
 
 
-
 seatgeek_events()
+
+
+def dynamo_pull():
+
+    event_json = (dynamoTable.get_item(
+        Key={
+            'Event_ID': event
+        }
+    ))['Item']
+
+    # print(event_json)
+
+    print(event_json['Event_ID'])
+    print(event_json['Event_name'])
+    print(event_json['Event_data'])
+    print(event_json['Ticket_prices'])
+
+# dynamo_pull()

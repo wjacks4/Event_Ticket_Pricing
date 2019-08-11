@@ -188,7 +188,9 @@ def Artists_to_DB():
 
 		Artists_df = Playlist_Artists(each_User, each_ID)
 		
-		for artist in Artists_df.iterrows():
+		for artist in Artists_df.head(10).iterrows():
+
+			print(artist)
 
 			"""
 			MYSQL DATA PREP AND INSERTION
@@ -198,10 +200,10 @@ def Artists_to_DB():
 			followers = ((artist[1]['artist_followers']))
 			popularity = ((artist[1]['artist_popularity']))
 
-			# artist_QL = 'INSERT INTO Artists_expanded(artist, genre, followers, popularity, playlist, artist_id) VALUES ("%s", "%s", "%s", "%s", "%s", "%s");' %(artist_name, each_genre, followers, popularity, each_Name, id)
-			#
-			# cursor.execute(artist_QL)
-			# connection.commit()
+			artist_QL = 'INSERT INTO Artists_expanded(artist, genre, followers, popularity, playlist, artist_id) VALUES ("%s", "%s", "%s", "%s", "%s", "%s");' %(artist_name, each_genre, followers, popularity, each_Name, id)
+
+			cursor.execute(artist_QL)
+			connection.commit()
 
 			"""
 			DYNAMO DATA INSERTION
