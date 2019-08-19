@@ -81,7 +81,6 @@ def eventbrite_artist_search(df):
     """
 
 
-
     artist_df = df.head(250)
     # Artist_df = df.head(5)
 
@@ -154,6 +153,10 @@ def eventbrite_artist_search(df):
                         shareable = event['shareable']
                         available_elsewhere = event['is_externally_ticketed']
 
+
+                        event_key = ( name_decode + str(event_id) + event_venue + event_city + event_state + str(event_date_UTC) + str(current_date))
+                        
+                        
                         event_array = pd.DataFrame([[spotify_artist, spotify_artist_id, event_name, event_id,
                                                      event_venue, event_city, event_state, event_date_UTC, lowest_price,
                                                      highest_price, capacity, sold_out_indicator, shareable,
@@ -168,10 +171,10 @@ def eventbrite_artist_search(df):
                         event_date_UTC, lowest_price, highest_price, capacity, sold_out_indicator, shareable,
                         available_elsewhere, current_date)
 
-                        print(insert_tuple)
+#                         print(insert_tuple)
                         event_QL = 'INSERT INTO `EVENTBRITE_EVENTS` (`artist`, `artist_id`, `name`, `id`, `venue`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `capacity`, `sold_out`, `shareable`, `available_elsewhere`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
 
-                        print(event_QL)
+#                         print(event_QL)
                         connection = pymysql.connect(host='ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com',
                                                      user='tickets_user', password='tickets_pass', db='tickets_db')
                         cursor = connection.cursor()
@@ -182,10 +185,9 @@ def eventbrite_artist_search(df):
                         """
                         DYNAMO WAY TO DO IT
                         """
-                        event_key = (((event['name']['text']).replace('"', '')).encode('utf-8') + event['venue']['name'] + event['venue']['address']['city'] + event['venue']['address']['region'] + event['start']['utc'])
-
+                        event_key = ( name_decode + str(event_id) + event_venue + event_city + event_state + str(event_date_UTC) + str(current_date))
                         print(event_key)
-
+                        
                         dynamotable.put_item(
 
                             Item={
