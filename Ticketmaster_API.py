@@ -201,11 +201,8 @@ def event_pull (df):
                         name = event['name']
                         event_id = event['id']
 
+                        pprint(event)
 
-                        #---------------------------------------------------------------#
-                        #-----EXTRACT VARIABLES OF INTEREST FROM JSON OBJECTS-----------#
-                        #-----------HANDLE EXCEPTIONS FOR MISSING VALUES----------------#
-                        #---------------------------------------------------------------#
                         try:
                             event_name = event['name']
                             print(event_name)
@@ -238,23 +235,9 @@ def event_pull (df):
                             event_date_Local = ' '
 
                         try:
-                            event_time_Local = event['dates']['start']['localTime']
-                            event_datetime_Local = datetime.strptime((event_date_Local + " " + event_time_Local), '%Y-%m-%d %H:%M:%S')
+                            date_UTC = event['dates']['start']['dateTime']
                         except KeyError as noEventTime:
-                            event_time_Local = ' '
-                            event_datetime_Local = datetime.strptime(event_date_Local, '%Y-%m-%d')
-
-                        try:
-                            TZ_string = event['dates']['timezone']
-                            event_TZ = pytz.timezone(TZ_string)
-                            try:
-                                local_dt = event_TZ.localize(event_datetime_Local, is_dst=None)
-                                date_UTC = local_dt.astimezone(pytz.utc)
-                            except ValueError as missing_datetime:
-                                event_date = " "
-                        except KeyError as noTZ:
-                            event_TZ = '?'
-                        # date_UTC = (event_datetime_UTC)
+                            date_UTC = ''
 
                         try:
                             event_sale_start = event['sales']['public']['startDateTime']
