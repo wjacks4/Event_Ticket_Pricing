@@ -201,65 +201,35 @@ def event_pull (df):
                         name = event['name']
                         event_id = event['id']
 
-
-                        #---------------------------------------------------------------#
-                        #-----EXTRACT VARIABLES OF INTEREST FROM JSON OBJECTS-----------#
-                        #-----------HANDLE EXCEPTIONS FOR MISSING VALUES----------------#
-                        #---------------------------------------------------------------#
                         try:
                             event_name = event['name']
-                            print(event_name)
                         except KeyError as noName:
-                            event_name = ''
+                            event_name = 'NA'
 
                         try:
                             event_venue = event['_embedded']['venues'][0]['name']
                         except KeyError as noVenue:
-                            event_venue=' '
+                            event_venue = 'NA'
 
                         try:
                             event_city = event['_embedded']['venues'][0]['city']['name']
                         except KeyError as noCity:
-                            event_city = ' '
+                            event_city = 'NA'
 
                         try:
                             event_state = event['venues'][0]['state']['name']
-                        # event_state_full = event['_embedded']['venues'][0]['state']['name']
-                        # #print(event_state_full)
-                        # event_state = (state_df.loc[state_df['State'] == event_state_full, 'Abbreviation']).tolist()
-                        # #print(event_state)
-
                         except KeyError as noState:
-                            event_state = ' '
+                            event_state = 'NA'
 
                         try:
-                            event_date_Local = event['dates']['start']['localDate']
-                        except KeyError as noEventDate:
-                            event_date_Local = ' '
-
-                        try:
-                            event_time_Local = event['dates']['start']['localTime']
-                            event_datetime_Local = datetime.strptime((event_date_Local + " " + event_time_Local), '%Y-%m-%d %H:%M:%S')
+                            date_UTC = event['dates']['start']['dateTime']
                         except KeyError as noEventTime:
-                            event_time_Local = ' '
-                            event_datetime_Local = datetime.strptime(event_date_Local, '%Y-%m-%d')
-
-                        try:
-                            TZ_string = event['dates']['timezone']
-                            event_TZ = pytz.timezone(TZ_string)
-                            try:
-                                local_dt = event_TZ.localize(event_datetime_Local, is_dst=None)
-                                date_UTC = local_dt.astimezone(pytz.utc)
-                            except ValueError as missing_datetime:
-                                event_date = " "
-                        except KeyError as noTZ:
-                            event_TZ = '?'
-                        # date_UTC = (event_datetime_UTC)
+                            date_UTC = 'NA'
 
                         try:
                             event_sale_start = event['sales']['public']['startDateTime']
                         except KeyError as noSaleStart:
-                            event_sale_start = ' '
+                            event_sale_start = 'NA'
 
                         try:
                             event_lowest_price = event['priceRanges'][0]['min']
@@ -310,19 +280,25 @@ def event_pull (df):
 
                         except ValueError as NoPrice:
 
-                            dynamotable.put_item(
+                            try:
 
-                                Item={
-                                    'Record_ID':record_key,
-                                    'name': event_name,
-                                    'artist': spotify_artist,
-                                    'city': event_city,
-                                    'date_UTC': str(date_UTC),
-                                    'state': event_state,
-                                    'venue': event_venue,
-                                    'create_ts': str(current_date)
-                                }
-                            )
+                                dynamotable.put_item(
+
+                                    Item={
+                                        'Record_ID':record_key,
+                                        'name': event_name,
+                                        'artist': spotify_artist,
+                                        'city': event_city,
+                                        'date_UTC': str(date_UTC),
+                                        'state': event_state,
+                                        'venue': event_venue,
+                                        'create_ts': str(current_date)
+                                    }
+                                )
+
+                            except ValueError as MissingData:
+
+                                print('Too much missing data')
 
                 except KeyError as NoEmbedded:
 
@@ -341,11 +317,11 @@ def event_pull (df):
 
         else:
 
+            access_string = (event_base_url + api_key2 + '&size=10&keyword=' + artist_keyword)
+
             try:
 
-                access_string = (event_base_url + api_key2 + '&size=10&keyword=' + artist_keyword)
-
-                #--------------SUBMIT REQUEST TO URL, GET JSON RESPONSE-----------#
+                # --------------SUBMIT REQUEST TO URL, GET JSON RESPONSE-----------#
                 raw_Dat = urllib.request.urlopen(access_string)
                 encoded_Dat = raw_Dat.read().decode('utf-8', 'ignore')
                 json_Dat = json.loads(encoded_Dat)
@@ -354,73 +330,42 @@ def event_pull (df):
 
                     event_Dat = json_Dat['_embedded']['events']
 
-                    #-------------EXTRACT EVENT ID FROM DATA IN EACH MEMBER OF EVENT OBJECT-----------#
+                    # pprint(event_Dat)
+
+                    # -------------EXTRACT EVENT ID FROM DATA IN EACH MEMBER OF EVENT OBJECT-----------#
                     for event in event_Dat:
                         name = event['name']
                         event_id = event['id']
 
-
-                        #---------------------------------------------------------------#
-                        #-----EXTRACT VARIABLES OF INTEREST FROM JSON OBJECTS-----------#
-                        #-----------HANDLE EXCEPTIONS FOR MISSING VALUES----------------#
-                        #---------------------------------------------------------------#
                         try:
                             event_name = event['name']
                         except KeyError as noName:
-                            event_name = ''
+                            event_name = 'NA'
 
                         try:
                             event_venue = event['_embedded']['venues'][0]['name']
                         except KeyError as noVenue:
-                            event_venue=' '
+                            event_venue = 'NA'
 
                         try:
                             event_city = event['_embedded']['venues'][0]['city']['name']
                         except KeyError as noCity:
-                            event_city = ' '
+                            event_city = 'NA'
 
                         try:
                             event_state = event['venues'][0]['state']['name']
-                            # event_state_full = event['_embedded']['venues'][0]['state']['name']
-                            # print(event_state_full)
-                            # event_state = (state_df.loc[state_df['State'] == event_state_full, 'Abbreviation']).tolist()
-                            # print(event_state)
-
                         except KeyError as noState:
-                            event_state = ' '
+                            event_state = 'NA'
 
                         try:
-                            event_date_Local = event['dates']['start']['localDate']
-                        except KeyError as noEventDate:
-                            event_date_Local = ' '
-
-
-                        try:
-                            event_time_Local = event['dates']['start']['localTime']
-                            event_datetime_Local = datetime.strptime((event_date_Local + " " + event_time_Local), '%Y-%m-%d %H:%M:%S')
+                            date_UTC = event['dates']['start']['dateTime']
                         except KeyError as noEventTime:
-                            event_time_Local = ' '
-                            event_datetime_Local = datetime.strptime(event_date_Local, '%Y-%m-%d')
-
-                        try:
-                            TZ_string = event['dates']['timezone']
-                            event_TZ = pytz.timezone(TZ_string)
-                            try:
-                                local_dt = event_TZ.localize(event_datetime_Local, is_dst=None)
-                                date_UTC = local_dt.astimezone(pytz.utc)
-                            except ValueError as missing_datetime:
-                                event_date = " "
-                        except KeyError as noTZ:
-                            event_TZ = '?'
-                        #	date_UTC = (event_datetime_UTC)
-
-                        #print('THE LOCAL EVENT DATETIME IS ' + str(local_dt) + ' AT TIME ZONE ' + str(TZ_string))
-                        #print('THE UTC EVENT DATETIME IS ' + str(event_datetime_UTC))
+                            date_UTC = 'NA'
 
                         try:
                             event_sale_start = event['sales']['public']['startDateTime']
                         except KeyError as noSaleStart:
-                            event_sale_start = ' '
+                            event_sale_start = 'NA'
 
                         try:
                             event_lowest_price = event['priceRanges'][0]['min']
@@ -432,36 +377,35 @@ def event_pull (df):
                         except KeyError as noPriceDat:
                             event_highest_price = ''
 
+                        event_profile = pd.DataFrame([[spotify_artist, spotify_artist_id, event_name, event_id,
+                                                       event_venue, event_city, event_state, date_UTC, event_sale_start,
+                                                       event_lowest_price, event_highest_price]],
+                                                     columns=['artist', 'artist_id', 'attraction_name', 'event_id',
+                                                              'venue', 'city', 'state', 'date_UTC', 'sale_start_date',
+                                                              'event_lowest_price', 'event_highest_price'])
 
-                        #-------CREATE A TEMPORARY DATAFRAME FOR EACH EVENT----------#
-                        event_profile=pd.DataFrame([[spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, date_UTC, event_sale_start, event_lowest_price, event_highest_price]],
-                                      columns=['artist', 'artist_id', 'attraction_name', 'event_id', 'venue', 'city', 'state', 'date_UTC', 'sale_start_date', 'event_lowest_price', 'event_highest_price'])
+                        insert_tuple = (
+                        spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state,
+                        date_UTC, event_sale_start, event_lowest_price, event_highest_price, current_date)
 
-                        insert_tuple = (spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, date_UTC, event_sale_start, event_lowest_price, event_highest_price, current_date)
-
-                        #print(insert_tuple)
-
-                        #------------SQL TIME - SUBSTITUTE STRINGS INTO SQL QUERY FOR DB SUBMISSION-------------#
+                        # ------------SQL TIME - SUBSTITUTE STRINGS INTO SQL QUERY FOR DB SUBMISSION-------------#
                         event_QL = 'INSERT INTO TICKETMASTER_EVENTS(artist, artist_id, name, id, venue, city, state, date_UTC, sale_start, lowest_price, highest_price, create_ts) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);'
 
-                        result  = cursor.execute(event_QL, insert_tuple)
+                        result = cursor.execute(event_QL, insert_tuple)
                         connection.commit()
 
                         """
                         DYNAMO WAY TO DO IT
                         """
-
-                        print(event_lowest_price)
-                        print(event_highest_price)
-
-                        record_key = (spotify_artist + event_name + event_venue + event_city + event_state + str(date_UTC)+ str(current_date))
+                        record_key = (spotify_artist + event_name + event_venue + event_city + event_state + str(
+                            date_UTC) + str(current_date))
 
                         try:
 
                             dynamotable.put_item(
 
                                 Item={
-                                    'Record_ID':record_key,
+                                    'Record_ID': record_key,
                                     'name': event_name,
                                     'artist': spotify_artist,
                                     'city': event_city,
@@ -469,32 +413,38 @@ def event_pull (df):
                                     'state': event_state,
                                     'venue': event_venue,
                                     'create_ts': str(current_date),
-                                    'lowest_price': int(event_lowest_price), 'highest_price': int(event_highest_price)
+                                    'lowest_price': int(event_lowest_price),
+                                    'highest_price': int(event_highest_price)
                                 }
                             )
 
                         except ValueError as NoPrice:
 
-                            dynamotable.put_item(
+                            try:
 
-                                Item={
-                                    'Record_ID':record_key,
-                                    'name': event_name,
-                                    'artist': spotify_artist,
-                                    'city': event_city,
-                                    'date_UTC': str(date_UTC),
-                                    'state': event_state,
-                                    'venue': event_venue,
-                                    'create_ts': str(current_date),
-                                }
-                            )
+                                dynamotable.put_item(
 
-                        #----------WAIT TWO SECONDS BEFORE SUBMITTING NEXT QUERY TO AVOID OVERLOADING API-----------#
-                        time.sleep(1)
+                                    Item={
+                                        'Record_ID': record_key,
+                                        'name': event_name,
+                                        'artist': spotify_artist,
+                                        'city': event_city,
+                                        'date_UTC': str(date_UTC),
+                                        'state': event_state,
+                                        'venue': event_venue,
+                                        'create_ts': str(current_date)
+                                    }
+                                )
+
+                            except ValueError as MissingData:
+
+                                print('Too much missing data')
 
                 except KeyError as NoEmbedded:
 
                     print('No Embedded Data')
+
+                    time.sleep(1)
 
             except KeyError as No_Events:
 
