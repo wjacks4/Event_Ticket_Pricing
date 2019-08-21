@@ -122,7 +122,7 @@ def create_eventbrite_s3():
     key='eventbrite_events.pkl'
     s3_resource.Object(bucket,key).put(Body=eventbrite_json)
 
-create_eventbrite_s3()
+# create_eventbrite_s3()
 
 def create_stubhub_s3():
 
@@ -141,7 +141,7 @@ def create_stubhub_s3():
     key='stubhub_events.pkl'
     s3_resource.Object(bucket,key).put(Body=stubhub_json)
 
-create_stubhub_s3()
+# create_stubhub_s3()
 
 def create_ticketmaster_s3():
 
@@ -160,7 +160,7 @@ def create_ticketmaster_s3():
     key='ticketmaster_events.pkl'
     s3_resource.Object(bucket,key).put(Body=ticketmaster_json)
 
-create_ticketmaster_s3()
+# create_ticketmaster_s3()
 
 def create_seatgeek_s3():
 
@@ -179,24 +179,28 @@ def create_seatgeek_s3():
     key='seatgeek_events.pkl'
     s3_resource.Object(bucket,key).put(Body=seatgeek_json)
 
-create_seatgeek_s3()
+# create_seatgeek_s3()
+
+
+
 
 """
 TEST PULLING BACK PICKLED DATA
 """
 
 def pickle_pull():
-
-    s3_resource = boto3.client('s3')
+    
+    
+    s3_client = boto3.client('s3')
     bucket = 'willjeventdata'
-    key = 'SeatGeek_Events.pkl'
-    response = s3_resource.get_object(Bucket=bucket, Key=key)
-    test=(response['Body'].read())
-    print(test.decode('utf8'))
+    key = 'seatgeek_events.pkl'
+    response = s3_client.get_object(Bucket=bucket, Key=key)
+    event_dict = (response['Body'].read())
+    event_json = json.loads(event_dict.decode('utf8'))
+    master_event_df = pd.DataFrame.from_dict(event_json)
+    print('The S3 JSON list now has ' + str(len(master_event_df)) + ' records')
 
-    json_obj = json.loads(test.decode('utf8'))
-
-# pickle_pull()
+pickle_pull()
 
 
 
