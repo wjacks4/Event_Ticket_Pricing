@@ -55,7 +55,7 @@ def data_fetch_pymysql():
     return artists_df
 
 
-data_fetch_pymysql()
+# data_fetch_pymysql()
 
 
 """
@@ -105,7 +105,7 @@ def test_s3():
 TEST PULLING DATA FROM EXISTING MYSQL INTO PANDAS, TURNING INTO JSON, THEN PICKLING IN S3
 """
 
-def mysql_to_s3():
+def create_eventbrite_s3():
 
     connection = connection = pymysql.connect(host='ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com',
                                               user='tickets_user', password='tickets_pass', db='tickets_db')
@@ -119,10 +119,67 @@ def mysql_to_s3():
     s3_resource = boto3.resource('s3')
 
     bucket='willjeventdata'
-    key='eventbrite_test.pkl'
+    key='eventbrite_events.pkl'
     s3_resource.Object(bucket,key).put(Body=eventbrite_json)
 
-# mysql_to_s3()
+create_eventbrite_s3()
+
+def create_stubhub_s3():
+
+    connection = connection = pymysql.connect(host='ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com',
+                                              user='tickets_user', password='tickets_pass', db='tickets_db')
+
+    stubhub_df = pd.read_sql('SELECT * FROM STUBHUB_EVENTS LIMIT 1000', con=connection)
+
+    print((stubhub_df).head(20))
+
+    stubhub_json = stubhub_df.to_json(orient='records')
+
+    s3_resource = boto3.resource('s3')
+
+    bucket='willjeventdata'
+    key='stubhub_events.pkl'
+    s3_resource.Object(bucket,key).put(Body=stubhub_json)
+
+create_stubhub_s3()
+
+def create_ticketmaster_s3():
+
+    connection = connection = pymysql.connect(host='ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com',
+                                              user='tickets_user', password='tickets_pass', db='tickets_db')
+
+    ticketmaster_df = pd.read_sql('SELECT * FROM TICKETMASTER_EVENTS LIMIT 1000', con=connection)
+
+    print((ticketmaster_df).head(20))
+
+    ticketmaster_json = ticketmaster_df.to_json(orient='records')
+
+    s3_resource = boto3.resource('s3')
+
+    bucket='willjeventdata'
+    key='ticketmaster_events.pkl'
+    s3_resource.Object(bucket,key).put(Body=ticketmaster_json)
+
+create_ticketmaster_s3()
+
+def create_seatgeek_s3():
+
+    connection = connection = pymysql.connect(host='ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com',
+                                              user='tickets_user', password='tickets_pass', db='tickets_db')
+
+    seatgeek_df = pd.read_sql('SELECT * FROM SEATGEEK_EVENTS LIMIT 1000', con=connection)
+
+    print((seatgeek_df).head(20))
+
+    seatgeek_json = seatgeek_df.to_json(orient='records')
+
+    s3_resource = boto3.resource('s3')
+
+    bucket='willjeventdata'
+    key='seatgeek_events.pkl'
+    s3_resource.Object(bucket,key).put(Body=seatgeek_json)
+
+create_seatgeek_s3()
 
 """
 TEST PULLING BACK PICKLED DATA
@@ -139,7 +196,7 @@ def pickle_pull():
 
     json_obj = json.loads(test.decode('utf8'))
 
-pickle_pull()
+# pickle_pull()
 
 
 

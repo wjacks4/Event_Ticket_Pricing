@@ -1,6 +1,16 @@
-"""
-EVENTBRITE API DATA PULL
-"""
+# -----------------------------------------------------#
+# -----------EVENTBRITE API DATA PULL------------------#
+# -----------------------------------------------------#
+# -----------PURPOSE - FOR EACH ARTIST ON A MAJOR------#
+# ---------------------SPOTIFY PLAYLIST, SEARCH FOR----#
+# ---------------------THEIR EVENTS ON EVENTBRITE------#
+# ---------------------AND INSERT ALL RELEVANT DATA----#
+# ---------------------INTO AN AWS RDB TABLE-----------#
+# -----------------------------------------------------#
+# ----------LAST UPDATED ON 5/9/2019-------------------#
+# -----------------------------------------------------#
+
+# !/usr/bin/env python3
 
 # import mysql
 # from mysql.connector import Error
@@ -32,16 +42,21 @@ import fuzzywuzzy
 from fuzzywuzzy import fuzz
 
 """PRINT TO LOG FOR MONITORING PURPOSES"""
+
+
 current_date = datetime.now()
 print('THIS PROGRAM RAN AT ' + str(current_date))
 
+"""EVENTBRITE LOGIN DATA"""
 
-"""GLOBAL API STRING DATA"""
+
 API_key = "QBBZEWV5XWAAFECR3D"
 API_secret = "7NG5DUZEJBCIGLFJWZRTQ3R7SE3UXUDCA4DFD7U3MFC57UQF45"
 OAuth_token = "ZG7IKNHFJFFYSXDN4R5K"
 Anon_OAuth_token = "SWIBI6XDBCO2UP5AOA7Y"
 base_string = "https://www.eventbriteapi.com/v3/events/search/?token=ZG7IKNHFJFFYSXDN4R5K&"
+
+"""GET ARTIST LIST FROM MYSQL"""
 
 
 def data_fetch_pymysql():
@@ -57,7 +72,14 @@ def data_fetch_pymysql():
 # data_fetch_pymysql()
 
 
-def eventbrite_event_pull():
+"""DEFINE DYNAMODB ENDPOINT"""
+dynamodb = boto3.resource('dynamodb')
+dynamotable = dynamodb.Table('EventBrite_Event_Table')
+
+"""MAIN FUNCTION"""
+
+
+def eventbrite_artist_search(df):
 
     """
     MAIN API FUNCTION
@@ -78,28 +100,25 @@ def eventbrite_event_pull():
 
     """
 
-    """GET ARTISTS DATAFRAME"""
-    artists_df = data_fetch_pymysql().head(250)
+    artist_df = df.head(5)
+    # Artist_df = df.head(5)
 
-    """CURRENT DATE ASSIGNMENT"""
     current_date = datetime.now()
 
-    """DEFINE DYNAMODB ENDPOINT"""
-    dynamodb = boto3.resource('dynamodb')
-    dynamotable = dynamodb.Table('EventBrite_Event_Table')
-
     """PULL BACK ALL EVENTBRITE RECORDS FROM S3 BUCKET, FOR APPENDING LATER"""
-    s3_client = boto3.client('s3')
+
     try:
+        s3_client = boto3.client('s3')
         bucket = 'willjeventdata'
         key = 'eventbrite_events.pkl'
         response = s3_client.get_object(Bucket=bucket, Key=key)
         event_dict = (response['Body'].read())
         event_json = json.loads(event_dict.decode('utf8'))
         master_event_df = pd.DataFrame.from_dict(event_json)
+
         temp_df = pd.DataFrame()
 
-        for artist_dat in artists_df.iterrows():
+        for artist_dat in artist_df.iterrows():
 
             spotify_artist = artist_dat[1]['artist']
             spotify_artist_id = artist_dat[1]['artist_id']
@@ -164,7 +183,7 @@ def eventbrite_event_pull():
 
                             """DYNAMODB INSERTION"""
                             event_key = ( name_decode + str(event_id) + event_venue + event_city + event_state + str(event_date_UTC) + str(current_date))
-                            # print(event_key)
+                            print(event_key)
 
                             dynamotable.put_item(
 
@@ -188,7 +207,7 @@ def eventbrite_event_pull():
                                                                 'capacity', 'sold_out_indicator', 'shareable',
                                                                 'available_elsewhere', 'create_ts'])
 
-                            temp_df = temp_df.append(event_array, ignore_index=True, sort=True)
+                            temp_df = temp_df.append(event_array, ignore_index=True)
 
                     except TypeError as no_data:
 
@@ -198,9 +217,7 @@ def eventbrite_event_pull():
 
                 print('Bad Request')
 
-        """APPEND LOCAL DF TO MASTER DF PULLED FROM S3"""
-        master_event_df = master_event_df.append(temp_df, sort=True)
-        print('The S3 JSON list now has ' + str(len(master_event_df)) + ' records')
+        master_event_df = master_event_df.append(temp_df)
 
         """S3 UPDATE"""
         s3_resource = boto3.resource('s3')
@@ -212,4 +229,4 @@ def eventbrite_event_pull():
         print('THE S3 BUCKET SOMEHOW GOT DELETED...')
 
 
-eventbrite_event_pull()
+eventbrite_artist_search(data_fetch_pymysql())
