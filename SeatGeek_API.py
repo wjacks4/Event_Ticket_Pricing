@@ -264,3 +264,8 @@ def seatgeek_events():
 
 
 seatgeek_events()
+
+
+"""PRINT TO LOG FOR MONITORING PURPOSES"""
+current_date = datetime.now()
+print('THIS PROGRAM FINISHED AT ' + str(current_date))

@@ -17,3 +17,5 @@ ids = ['i-043080e892586e1d2']
 # ec2.start_instances(InstanceIds=ids, DryRun=True)
 
 ec2.start_instances(InstanceIds=ids, DryRun=False)
+
+

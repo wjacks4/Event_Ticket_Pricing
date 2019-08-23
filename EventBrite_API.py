@@ -213,3 +213,8 @@ def eventbrite_event_pull():
 
 
 eventbrite_event_pull()
+
+
+"""PRINT TO LOG FOR MONITORING PURPOSES"""
+current_date = datetime.now()
+print('THIS PROGRAM FINISHED AT ' + str(current_date))
