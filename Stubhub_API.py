@@ -127,7 +127,7 @@ def stubhub_event_pull():
         temp_df = pd.DataFrame()
 
         """GET ARTISTS DF FROM MYSQL"""
-        artists_df = data_fetch_pymysql().head(200)['artist']
+        artists_df = data_fetch_pymysql().head(250)['artist']
 
         """CURRENT DATE ASSIGNMENT"""
         current_date = datetime.now()
@@ -141,7 +141,7 @@ def stubhub_event_pull():
             query_params = ("q=" + artist_encode + "&" + "rows=100")
             artist_url = (base_url + "?" + query_params)
 
-            if i <= 40:
+            if i <= 50:
 
                 print(i)
                 try:
@@ -219,7 +219,7 @@ def stubhub_event_pull():
                     print(KeyError)
                     print('exceeded quota for stubhub API')
 
-            elif 40 < i <= 80:
+            elif 50 < i <= 100:
                 print(i)
 
                 try:
@@ -299,7 +299,7 @@ def stubhub_event_pull():
                     print(KeyError)
                     print('exceeded quota for stubhub API')
 
-            elif 80 < i <= 120:
+            elif 100 < i <= 150:
 
                 print(i)
 
@@ -379,7 +379,7 @@ def stubhub_event_pull():
                     print(KeyError)
                     print('exceeded quota for stubhub API')
 
-            elif 120 < i <= 160:
+            elif 150 < i <= 200:
 
                 print(i)
 

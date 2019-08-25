@@ -7,7 +7,7 @@ Created on Tue Aug 20 14:08:10 2019
 
 import boto3
 import paramiko
-import datetime
+from datetime import datetime
 import time
 
 # EC2 access credentials
@@ -28,14 +28,8 @@ if status == 'running':
 
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh.connect('ec2-52-37-11-38.us-west-2.compute.amazonaws.com', username='ubuntu', key_filename='C:/Users/wjack/Desktop/Event_Ticket_Pricing/Event_Ticket_Pricing/Key Files/Tickets Key 5 Open.pub')
-
-    # stdin_test, stdout_test, stderr_test = ssh.exec_command('python3 ~/bin/test.py > ~/bin/test_log.txt')
-    # print('Test.py ran successfully')
-
-    stdin_spotify, stdout_spotify, stderr_spotify = ssh.exec_command('python3 ~/bin/Spotify_API.py > ~/bin/Spotify_log.txt')
-    stdout_spotify.readlines()
-    print('Spotify_API.py finished running at ' + str(datetime.now()))
+    # ssh.connect('ec2-52-37-11-38.us-west-2.compute.amazonaws.com', username='ubuntu', key_filename='C:/Users/wjack/Desktop/Event_Ticket_Pricing/Event_Ticket_Pricing/Key Files/Tickets Key 5 Open.pub')
+    ssh.connect('ec2-52-37-11-38.us-west-2.compute.amazonaws.com', username='ubuntu', key_filename='~/bin/Tickets Key 5 Open.pub')
 
     stdin_seatgeek, stdout_seatgeek, stderr_seatgeek = ssh.exec_command('python3 ~/bin/SeatGeek_API.py > ~/bin/SeatGeek_log.txt')
     stdout_seatgeek.readlines()

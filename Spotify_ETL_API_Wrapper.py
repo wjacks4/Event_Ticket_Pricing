@@ -37,25 +37,6 @@ if status == 'running':
     stdout_spotify.readlines()
     print('Spotify_API.py finished running at ' + str(datetime.now()))
 
-    stdin_seatgeek, stdout_seatgeek, stderr_seatgeek = ssh.exec_command('python3 ~/bin/SeatGeek_API.py > ~/bin/SeatGeek_log.txt')
-    stdout_seatgeek.readlines()
-    print('Seatgeek_API.py finished running at '+ str(datetime.now()))
-
-
-    stdin_stubhub, stdout_stubhub, stderr_stubhub = ssh.exec_command('python3 ~/bin/Stubhub_API.py > ~/bin/Stubhub_log.txt')
-    stdout_stubhub.readlines()
-    print('Stubhub_API.py finished running at '+ str(datetime.now()))
-
-
-    stdin_ticketmaster, stdout_ticketmaster, stderr_ticketmaster = ssh.exec_command('python3 ~/bin/Ticketmaster_API.py > ~/bin/Ticketmaster_log.txt')
-    stdout_ticketmaster.readlines()
-    print('Ticketmaster_API.py finished running at '+ str(datetime.now()))
-
-
-    stdin_eventbrite, stdout_eventbrite, stderr_eventbrite = ssh.exec_command('python3 ~/bin/EventBrite_API.py > ~/bin/Eventbrite_log.txt')
-    stdout_eventbrite.readlines()
-    print('Eventbrite_API.py finished running at '+ str(datetime.now()))
-
     ssh.close()
 
 # Stop ETL Main instance
