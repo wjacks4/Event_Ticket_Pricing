@@ -9,6 +9,7 @@ import boto3
 import paramiko
 from datetime import datetime
 import time
+import os
 
 # EC2 access credentials
 ec2_client = boto3.client('ec2')
@@ -24,12 +25,20 @@ status_response = ec2_resource.meta.client.describe_instance_status(InstanceIds=
 status = status_response[0]['InstanceState']['Name']
 print(status)
 
+hostname_response = ec2_resource.meta.client.describe_instances(InstanceIds = instance_ids)['Reservations'][0]['Instances']
+hostname = hostname_response[0]['PublicDnsName']
+print(hostname)
+
+
+key_location = os.path.join(os.path.expanduser('~'), 'bin', 'Tickets_Key_5_Open.pub')
+print(key_location)
+
 if status == 'running':
 
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     # ssh.connect('ec2-52-37-11-38.us-west-2.compute.amazonaws.com', username='ubuntu', key_filename='C:/Users/wjack/Desktop/Event_Ticket_Pricing/Event_Ticket_Pricing/Key Files/Tickets Key 5 Open.pub')
-    ssh.connect('ec2-52-37-11-38.us-west-2.compute.amazonaws.com', username='ubuntu', key_filename='~/bin/Tickets Key 5 Open.pub')
+    ssh.connect(hostname, username='ubuntu', key_filename=key_location)
 
     stdin_seatgeek, stdout_seatgeek, stderr_seatgeek = ssh.exec_command('python3 ~/bin/SeatGeek_API.py > ~/bin/SeatGeek_log.txt')
     stdout_seatgeek.readlines()

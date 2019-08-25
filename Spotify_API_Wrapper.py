@@ -9,6 +9,7 @@ import boto3
 import paramiko
 from datetime import datetime
 import time
+import os
 
 # EC2 access credentials
 ec2_client = boto3.client('ec2')
@@ -29,6 +30,9 @@ print(status)
 hostname_response = ec2_resource.meta.client.describe_instances(InstanceIds = instance_ids)['Reservations'][0]['Instances']
 hostname = hostname_response[0]['PublicDnsName']
 print(hostname)
+
+key_location = os.path.join(os.path.expanduser('~'), 'bin', 'Tickets_Key_5_Open.pub')
+print(key_location)
 
 if status == 'running':
 
