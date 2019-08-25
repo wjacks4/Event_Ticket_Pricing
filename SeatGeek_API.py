@@ -2,40 +2,12 @@
 SEATGEEK API DATA PULL
 """
 
-import json
-from dateutil import parser
-import time
-import os
-import subprocess
-import urllib
-import urllib.request
-import pandas as pd
-import unidecode
-from unidecode import unidecode
-import requests
-import urllib
-from urllib import parse
-import sys
-import base64
-import numpy as np
-# import mysql-python
 import pymysql
-# import MySQLdb
-import base64
 import datetime
 from datetime import datetime
-import easydict
-from collections import defaultdict
-import pickle
-import pprint
-from pprint import pprint
-
-import urllib
 import pandas as pd
-import numpy as np
 import json
 import requests
-
 import boto3
 
 """PRINT TO LOG FOR MONITORING PURPOSES"""
@@ -48,13 +20,17 @@ client_id_str = ('MTM4MTIyMDZ8MTU1NDQ3MTkxMy43Ng')
 client_secret_str = ('c49766eaad2bc8bc33810d112d141ca9a09b0a78b1be52c459eb19c5fd3527a5')
 
 
+def xstr(s):
+    return '' if s is None else s
+
+
 def data_fetch_pymysql():
     connection = pymysql.connect(host='ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com',
                                  user='tickets_user',
                                  password='tickets_pass',
                                  db='tickets_db')
 
-    artists_df = pd.read_sql('SELECT * FROM ARTISTS_WITH_EVENTS order by current_followers desc', con=connection)
+    artists_df = pd.read_sql('SELECT * FROM ARTISTS_WITH_EVENTS order by event_count desc, current_followers desc', con=connection)
     return artists_df
 
 
@@ -86,7 +62,7 @@ def seatgeek_events():
     """
 
     """GET ARTISTS DATAFRAME"""
-    artists_df = data_fetch_pymysql().head(5)['artist']
+    artists_df = data_fetch_pymysql().head(250)['artist']
 
     """CURRENT DATE ASSIGNMENT"""
     current_date = datetime.now()
@@ -105,6 +81,7 @@ def seatgeek_events():
         event_dict = (response['Body'].read())
         event_json = json.loads(event_dict.decode('utf8'))
         master_event_df = pd.DataFrame.from_dict(event_json)
+        print('The S3 JSON list started with ' + str(len(master_event_df)) + ' records')
         temp_df = pd.DataFrame()
 
         """INITIALIZE INCREMENTING VARIABLE"""
@@ -132,73 +109,73 @@ def seatgeek_events():
                     price_data = event['stats']
 
                     try:
-                        event_name = event['title']
+                        event_name = xstr(event['title'])
                     # print(event_name)
                     except KeyError as noName:
                         event_name = ''
 
                     try:
-                        event_id = event['id']
+                        event_id = xstr(event['id'])
                     # print(event_id)
                     except KeyError as noID:
                         event_id = ''
 
                     try:
-                        event_date_utc = event['datetime_utc']
+                        event_date_utc = xstr(event['datetime_utc'])
                     # print(event_date_utc)
                     except KeyError as noDatetime:
                         event_date_utc = ''
 
                     try:
-                        event_venue = venue_data['name']
+                        event_venue = xstr(venue_data['name'])
                     # print(event_venue)
                     except KeyError as noVenue:
                         event_venue = ''
 
                     try:
-                        event_capacity = venue_data['capacity']
+                        event_capacity = xstr(venue_data['capacity'])
                     # print(event_capacity)
                     except KeyError as noCapacity:
                         event_capacity = ''
 
                     try:
-                        event_city = venue_data['city']
+                        event_city = xstr(venue_data['city'])
                     # print(event_city)
                     except KeyError as noCity:
                         event_city = ''
 
                     try:
-                        event_state = venue_data['state']
+                        event_state = xstr(venue_data['state'])
                     # print(event_state)
                     except KeyError as noState:
                         event_state = ''
 
                     try:
-                        avg_price = price_data['average_price']
+                        avg_price = xstr(price_data['average_price'])
                     # print(avg_price)
                     except KeyError as noAvg:
                         avg_price = ''
 
                     try:
-                        med_price = price_data['median_price']
+                        med_price = xstr(price_data['median_price'])
                     # print(med_price)
                     except KeyError as noMed:
                         med_price = ''
 
                     try:
-                        lowest_price = price_data['lowest_price']
+                        lowest_price = xstr(price_data['lowest_price'])
                     # print(lowest_price)
                     except KeyError as noLowest:
                         lowest_price = ''
 
                     try:
-                        highest_price = price_data['highest_price']
+                        highest_price = xstr(price_data['highest_price'])
                     # print(highest_price)
                     except KeyError as noHighest:
                         highest_price = ''
 
                     try:
-                        no_listings = price_data['listing_count']
+                        no_listings = xstr(price_data['listing_count'])
                     # print(no_listings)
                     except KeyError as noListingCount:
                         no_listings = ''
@@ -220,6 +197,13 @@ def seatgeek_events():
                     venue_dict = event['venue']
                     price_dict = event['stats']
 
+                    # print(event_name)
+                    # print(event_id)
+                    # print(event_venue)
+                    # print(event_city)
+                    # print(event_state)
+                    # print(event_date_utc)
+                    # print(current_date)
                     event_key = (event_name + str(event_id) + event_venue + event_city + event_state + str(event_date_utc) + str(current_date))
                     # print(event_key)
                     dynamoTable.put_item(

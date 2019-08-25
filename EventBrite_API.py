@@ -50,7 +50,7 @@ def data_fetch_pymysql():
                                  password='tickets_pass',
                                  db='tickets_db')
 
-    artists_df = pd.read_sql('SELECT * FROM ARTISTS_WITH_EVENTS order by current_followers desc', con=connection)
+    artists_df = pd.read_sql('SELECT * FROM ARTISTS_WITH_EVENTS order by event_count desc, current_followers desc', con=connection)
     return artists_df
 
 
@@ -97,6 +97,7 @@ def eventbrite_event_pull():
         event_dict = (response['Body'].read())
         event_json = json.loads(event_dict.decode('utf8'))
         master_event_df = pd.DataFrame.from_dict(event_json)
+        print('The S3 JSON list started with ' + str(len(master_event_df)) + ' records')
         temp_df = pd.DataFrame()
 
         for artist_dat in artists_df.iterrows():

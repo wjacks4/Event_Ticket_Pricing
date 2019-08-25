@@ -6,16 +6,44 @@ Created on Tue Aug 20 14:08:10 2019
 """
 
 import boto3
+import paramiko
 import sys
 
-ec2 = boto3.client('ec2')
-
+ec2_client = boto3.client('ec2')
+ec2_resource = boto3.resource('ec2')
 # test instance stopping for the t2 micro instance
-ids = ['i-043080e892586e1d2']
+instance_ids = ['i-0d1fa7089eef1311e']
 
 # Do a dryrun first to verify permissions
-# ec2.start_instances(InstanceIds=ids, DryRun=True)
+# ec2_client.start_instances(InstanceIds=ids, DryRun=False)
 
-ec2.start_instances(InstanceIds=ids, DryRun=False)
+status_response = ec2_resource.meta.client.describe_instance_status(InstanceIds=instance_ids)['InstanceStatuses']
+status = status_response[0]['InstanceState']['Name']
+print(status)
+
+ssh = paramiko.SSHClient()
+ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+ssh.connect('ec2-52-37-11-38.us-west-2.compute.amazonaws.com', username='ubuntu', key_filename='C:/Users/wjack/Desktop/Event_Ticket_Pricing/Event_Ticket_Pricing/Key Files/Tickets Key 5 Open.pub')
+
+# stdin_seatgeek, stdout_seatgeek, stderr_seatgeek = ssh.exec_command('python3 ~/bin/test.py > ~/bin/test_log.txt')
+# print('Test.py run successfully')
+
+stdin_seatgeek, stdout_seatgeek, stderr_seatgeek = ssh.exec_command('python3 ~/bin/SeatGeek_API.py > ~/bin/SeatGeek_log.txt')
+print('Seatgeek_API.py run successfully')
+stdout_seatgeek.readlines()
+
+# stdin_stubhub, stdout_stubhub, stderr_stubhub = ssh.exec_command('python3 ~/bin/Stubhub_API.py > ~/bin/Stubhub_log.txt')
+# print('Stubhub_API.py run successfully')
+#
+# stdin_ticketmaster, stdout_ticketmaster, stderr_ticketmaster = ssh.exec_command('python3 ~/bin/Ticketmaster_API.py > ~/bin/Ticketmaster_log.txt')
+# print('Ticketmaster_API.py run successfully')
+#
+# stdin_eventbrite, stdout_eventbrite, stderr_eventbrite = ssh.exec_command('python3 ~/bin/EventBrite_API.py > ~/bin/Eventbrite_log.txt')
+# print('Eventbrite_API.py run successfully')
+
+ssh.close()
+
+# ec2_client.stop_instances(InstanceIds=ids, DryRun=False)
+
 
 

@@ -1,12 +1,6 @@
-#-----------------------------------------------------#
-#-----------INSTAGRAM API DATA PULL-------------------#
-#-----------------------------------------------------#
-#-----------PURPOSE - FOR EACH MAJOR ARTIST, ---------#
-#---------------------MANUALLY CHOSEN BY YOURS--------#
-#---------------------TRULY, PULL ALL FOLLOWER DATA---#
-#-----------------------------------------------------#
-#----------LAST UPDATED ON 6/8/2019-------------------#
-#-----------------------------------------------------#
+"""
+INSTAGRAM API PULL
+"""
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
