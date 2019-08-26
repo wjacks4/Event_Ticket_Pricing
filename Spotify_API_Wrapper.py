@@ -16,11 +16,15 @@ ec2_client = boto3.client('ec2')
 ec2_resource = boto3.resource('ec2')
 instance_ids = ['i-0d1fa7089eef1311e']
 
+# Check ETL Main instance status
+status_response = ec2_resource.meta.client.describe_instance_status(InstanceIds=instance_ids)['InstanceStatuses']
+status = status_response[0]['InstanceState']['Name']
+print('The main ETL instance was ' + status + ' at ' + str(datetime.now()))
+
 # Start ETL Main instance
 ec2_client.start_instances(InstanceIds=instance_ids, DryRun=False)
 
 time.sleep(30)
-
 
 # Check ETL Main instance status
 status_response = ec2_resource.meta.client.describe_instance_status(InstanceIds=instance_ids)['InstanceStatuses']
@@ -51,6 +55,11 @@ if status == 'running':
 
 # Stop ETL Main instance
 ec2_client.stop_instances(InstanceIds=instance_ids, DryRun=False)
+
+# Check ETL Main instance status
+status_response = ec2_resource.meta.client.describe_instance_status(InstanceIds=instance_ids)['InstanceStatuses']
+status = status_response[0]['InstanceState']['Name']
+print('The main ETL instance was ' + status + ' at ' + str(datetime.now()))
 
 
 
