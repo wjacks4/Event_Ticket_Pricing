@@ -176,10 +176,10 @@ def create_seatgeek_s3():
     s3_resource = boto3.resource('s3')
 
     bucket='willjeventdata'
-    key='seatgeek_events.pkl'
+    key='seatgeek_events2.pkl'
     s3_resource.Object(bucket,key).put(Body=seatgeek_json)
 
-# create_seatgeek_s3()
+create_seatgeek_s3()
 
 
 
@@ -200,7 +200,7 @@ def pickle_pull():
     master_event_df = pd.DataFrame.from_dict(event_json)
     print('The S3 JSON list now has ' + str(len(master_event_df)) + ' records')
 
-pickle_pull()
+# pickle_pull()
 
 
 
