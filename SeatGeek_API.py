@@ -213,7 +213,7 @@ def seatgeek_events():
                             'date_UTC': str(event['datetime_utc']), 'state': venue_dict['state'],
                             'venue': venue_dict['name'], 'capacity': venue_dict['capacity'], 'create_ts': str(current_date),
                             'lowest_price': price_dict['lowest_price'], 'highest_price': price_dict['highest_price'],
-                            'med_price': price_dict['median_price'], 'avg_price': price_dict['average_price'],
+                            'median_price': price_dict['median_price'], 'average_price': price_dict['average_price'],
                             'listing_count': price_dict['listing_count']
                         }
                     )
@@ -222,9 +222,9 @@ def seatgeek_events():
                     event_array = pd.DataFrame([[artist, event_name, event_id, event_venue, event_capacity,
                                                  event_city, event_state, event_date_utc, lowest_price, highest_price,
                                                  avg_price, med_price, no_listings, current_date]],
-                                               columns=['artist', 'name', 'ID', 'venue', 'capacity', 'city',
-                                                        'state', 'date_UTC', 'lowest_price', 'highest_price', 'avg_price',
-                                                        'med_price', 'listing_count', 'create_ts'])
+                                               columns=['artist', 'name', 'event_id', 'venue', 'capacity', 'city',
+                                                        'state', 'date_UTC', 'lowest_price', 'highest_price', 'average_price',
+                                                        'median_price', 'listing_count', 'create_ts'])
 
                     temp_df = temp_df.append(event_array, ignore_index=True, sort=True)
 

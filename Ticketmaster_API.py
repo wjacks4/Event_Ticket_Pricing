@@ -241,7 +241,7 @@ def ticketmaster_event_pull():
 
                             """S3 NEW DATA CREATION"""
                             event_array=pd.DataFrame([[spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, date_UTC, event_sale_start, event_lowest_price, event_highest_price, current_date]],
-                                          columns=['artist', 'artist_id', 'attraction_name', 'event_id', 'venue', 'city', 'state', 'date_UTC', 'sale_start_date', 'event_lowest_price', 'event_highest_price', 'create_ts'])
+                                          columns=['artist', 'artist_id', 'name', 'event_id', 'venue', 'city', 'state', 'date_UTC', 'sale_start_date', 'lowest_price', 'highest_price', 'create_ts'])
 
                             temp_df = temp_df.append(event_array, ignore_index=True, sort=True)
 

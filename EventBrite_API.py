@@ -184,9 +184,9 @@ def eventbrite_event_pull():
                                                          event_venue, event_city, event_state, event_date_UTC, lowest_price,
                                                          highest_price, capacity, sold_out_indicator, shareable,
                                                          available_elsewhere, current_date]],
-                                                       columns=['artist', 'artist_id', 'name', 'ID', 'venue', 'city',
+                                                       columns=['artist', 'artist_id', 'name', 'event_id', 'venue', 'city',
                                                                 'state', 'date_UTC', 'lowest_price', 'highest_price',
-                                                                'capacity', 'sold_out_indicator', 'shareable',
+                                                                'capacity', 'sold_out', 'shareable',
                                                                 'available_elsewhere', 'create_ts'])
 
                             temp_df = temp_df.append(event_array, ignore_index=True, sort=True)

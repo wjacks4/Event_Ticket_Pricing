@@ -208,7 +208,7 @@ def stubhub_event_pull():
                             event_array = pd.DataFrame([[artist, '', event_name, event_id, event_venue, event_city,
                                                          event_state, event_date_UTC, lowest_price, highest_price,
                                                          ticket_count, listing_count, current_date]],
-                                                       columns=['artist', 'artist_id', 'name', 'ID', 'venue', 'city',
+                                                       columns=['artist', 'artist_id', 'name', 'event_id', 'venue', 'city',
                                                                 'state', 'date_UTC', 'lowest_price', 'highest_price',
                                                                 'ticket_count', 'listing_count', 'create_ts'])
 
