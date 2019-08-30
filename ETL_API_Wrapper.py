@@ -25,14 +25,24 @@ if not status_response:
     print('The main ETL instance was stopped at ' + str(datetime.now()))
 
 else:
-    print('The main ETL instance began the job running')
+    print('The main ETL instance was running at the start of the job')
+
+# GET RDS STATUS
+rds_status_response = rds_client.describe_db_instances(DBInstanceIdentifier='ticketsdb')
+rds_instance_status = rds_status_response['DBInstances'][0]['DBInstanceStatus']
+print(rds_instance_status)
+if rds_instance_status == 'running':
+    print('The main RDS MYSQL DB was running at ' + str(datetime.now()))
+    
+else:
+    print('The main RDS MYSQL DB was stopped at the start of the job')
 
 
 def test():
     # Start ETL Main instance
+    
     ec2_client.start_instances(InstanceIds=instance_ids, DryRun=False)
-    rds_client.start_db_instance(DB_Ids = 'ticketsdb')
-
+    
     time.sleep(120)
 
     # Check ETL Main instance status
@@ -40,11 +50,17 @@ def test():
     status = status_response[0]['InstanceState']['Name']
     print('The main ETL instance was ' + status + ' at ' + str(datetime.now()))
 
+    # Check RDS Main instance status
+    rds_status_response = rds_client.describe_db_instances(DBInstanceIdentifier='ticketsdb')
+    rds_instance_status = rds_status_response['DBInstances'][0]['DBInstanceStatus']
+    print('The main RDS MYSQL DB was ' + rds_instance_status + ' at ' + str(datetime.now()))
+
     # Get ETL Main instance hostname
     hostname_response = ec2_resource.meta.client.describe_instances(InstanceIds = instance_ids)['Reservations'][0]['Instances']
     hostname = hostname_response[0]['PublicDnsName']
 
-    key_location = os.path.join(os.path.expanduser('~'), 'bin', 'Tickets_Key_5_Open.pub')
+    # key_location = os.path.join(os.path.expanduser('~'), 'bin', 'Tickets_Key_5_Open.pub')
+    key_location = "C:/Users/bswxj01/Desktop/Event_Ticket_Pricing/Key Files/Tickets Key 5 Open.pub"
 
     if status == 'running':
 
@@ -76,7 +92,7 @@ def test():
 
     # Stop ETL Main instance
     ec2_client.stop_instances(InstanceIds=instance_ids, DryRun=False)
-    rds_client.stop_db_instance(DB_Ids = 'ticketsdb')
+    rds_client.stop_db_instance(DBInstanceIdentifier = 'ticketsdb')
 
     # Check ETL Main instance status
     status_response = ec2_resource.meta.client.describe_instance_status(InstanceIds=instance_ids)['InstanceStatuses']
@@ -87,7 +103,7 @@ def test():
         print('The main ETL instance ended running')
 
 
-# test()
+test()
 
 
 
