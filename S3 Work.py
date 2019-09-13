@@ -110,7 +110,7 @@ def create_eventbrite_s3():
     connection = connection = pymysql.connect(host='ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com',
                                               user='tickets_user', password='tickets_pass', db='tickets_db')
 
-    eventbrite_df = pd.read_sql('SELECT * FROM EVENTBRITE_EVENTS LIMIT 1000', con=connection)
+    eventbrite_df = pd.read_sql('SELECT * FROM EVENTBRITE_EVENTS', con=connection)
 
     print((eventbrite_df).head(20))
 
@@ -167,7 +167,7 @@ def create_seatgeek_s3():
     connection = connection = pymysql.connect(host='ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com',
                                               user='tickets_user', password='tickets_pass', db='tickets_db')
 
-    seatgeek_df = pd.read_sql('SELECT * FROM SEATGEEK_EVENTS LIMIT 1000', con=connection)
+    seatgeek_df = pd.read_sql('SELECT * FROM SEATGEEK_EVENTS', con=connection)
 
     print((seatgeek_df).head(20))
 
@@ -176,10 +176,10 @@ def create_seatgeek_s3():
     s3_resource = boto3.resource('s3')
 
     bucket='willjeventdata'
-    key='seatgeek_events2.pkl'
+    key='seatgeek_events.pkl'
     s3_resource.Object(bucket,key).put(Body=seatgeek_json)
 
-# create_seatgeek_s3()
+create_seatgeek_s3()
 
 
 
@@ -193,7 +193,7 @@ def pickle_pull():
     
     s3_client = boto3.client('s3')
     bucket = 'willjeventdata'
-    key = 'stubhub_events.pkl'
+    key = 'eventbrite_events.pkl'
     response = s3_client.get_object(Bucket=bucket, Key=key)
     event_dict = (response['Body'].read())
     event_json = json.loads(event_dict.decode('utf8'))
@@ -202,7 +202,7 @@ def pickle_pull():
     
     print(master_event_df.head(10))
 
-pickle_pull()
+# pickle_pull()
 
 
 
