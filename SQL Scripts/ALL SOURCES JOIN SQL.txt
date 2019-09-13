@@ -1,0 +1,27 @@
+SELECT distinct A.artist,
+	A.city,
+	A.state,
+	A.date_UTC,
+	A.venue,
+	A.create_date,
+	A.lowest_price as stubhub_lowest_price,
+	A.highest_price as stubhub_highest_price,
+	B.lowest_price as ticketmaster_lowest_price,
+	B.highest_price as ticketmaster_highest_price,
+	C.lowest_price as eventbrite_lowest_price,
+	C.highest_price as eventbrite_highest_price,
+	D.lowest_price as seatgeek_lowest_price,
+	D.highest_price as seatgeek_highest_price
+from STUBHUB_DAILY_LOWEST A left join TICKETMASTER_DAILY_LOWEST B 
+		on A.artist = B.artist AND	
+			A.date_UTC = B.date_UTC AND
+			A.create_date = B.create_date
+	left join EVENTBRITE_DAILY_LOWEST C 
+		on A.artist = C.artist AND
+			A.date_UTC = C.date_UTC AND
+			A.create_date  = C.create_date
+	left join SEATGEEK_DAILY_LOWEST D
+		on A.artist = D.artist AND
+			A.date_UTC = D.date_UTC AND
+			A.create_date = D.create_date
+limit 1000;

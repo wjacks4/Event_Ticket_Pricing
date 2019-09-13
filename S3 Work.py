@@ -179,7 +179,7 @@ def create_seatgeek_s3():
     key='seatgeek_events2.pkl'
     s3_resource.Object(bucket,key).put(Body=seatgeek_json)
 
-create_seatgeek_s3()
+# create_seatgeek_s3()
 
 
 
@@ -193,16 +193,16 @@ def pickle_pull():
     
     s3_client = boto3.client('s3')
     bucket = 'willjeventdata'
-    key = 'seatgeek_events.pkl'
+    key = 'stubhub_events.pkl'
     response = s3_client.get_object(Bucket=bucket, Key=key)
     event_dict = (response['Body'].read())
     event_json = json.loads(event_dict.decode('utf8'))
     master_event_df = pd.DataFrame.from_dict(event_json)
     print('The S3 JSON list now has ' + str(len(master_event_df)) + ' records')
+    
+    print(master_event_df.head(10))
 
-# pickle_pull()
-
-
+pickle_pull()
 
 
 
