@@ -77,6 +77,15 @@ class pkl_to_json:
 seatgeek_translate = pkl_to_json('seatgeek')
 seatgeek_translate.json_put(seatgeek_translate.pickle_pull())
 
+ticketmaster_translate = pkl_to_json('ticketmaster')
+ticketmaster_translate.json_put(ticketmaster_translate.pickle_pull())
+
+stubhub_translate = pkl_to_json('stubhub')
+stubhub_translate.json_put(stubhub_translate.pickle_pull())
+
+eventbrite_translate = pkl_to_json('eventbrite')
+eventbrite_translate.json_put(eventbrite_translate.pickle_pull())
+
 
 
 
