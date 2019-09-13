@@ -39,33 +39,43 @@ import boto3
 """IMPORT PICKLE FROM S3, SAVE AS LARGE JSON OBJ"""
 
 
-def pickle_pull():
-    s3_client = boto3.client('s3')
-    bucket = 'willjeventdata'
-    key = 'ticketmaster_events.pkl'
-    response = s3_client.get_object(Bucket=bucket, Key=key)
-    event_dict = (response['Body'].read())
-    event_json = json.loads(event_dict.decode('utf8'))
-    master_event_df = pd.DataFrame.from_dict(event_json)
-    print('The S3 JSON list now has ' + str(len(master_event_df)) + ' records')
 
-    test_df = master_event_df.head(10)
+class pkl_to_json:
 
-    new_event_json = test_df.to_json(orient='records')
-    print(new_event_json)
+    def __init__(self, source):
+        self.bucket_pkl_string = str(source + '_events.pkl')
+        self.new_json_string = str(source + '_events.json')
+        
+    
+    def pickle_pull(self):
+        s3_client = boto3.client('s3')
+        bucket = 'willjeventdata'
+        key = self.bucket_pkl_string
+        response = s3_client.get_object(Bucket=bucket, Key=key)
+        event_dict = (response['Body'].read())
+        event_json = json.loads(event_dict.decode('utf8'))
+        master_event_df = pd.DataFrame.from_dict(event_json)
+        print('The S3 JSON list now has ' + str(len(master_event_df)) + ' records')
+    
+        test_df = master_event_df.head(10)
+        return(test_df)
+    
+    def json_put(self, input_df):
+        bucket='willjeventdata'
+        new_event_json = input_df.to_json(orient='records')
+        print(new_event_json)
+    
+        json_reform = new_event_json.replace('[{', '{').replace(']}', '}').replace('},', '}\n')
+        print(json_reform)
+    
+        s3_resource = boto3.resource('s3')
+        key2 = self.new_json_string
+        s3_resource.Object(bucket, key2).put(Body=json_reform)
 
-    json_reform = new_event_json.replace('[{', '{').replace(']}', '}').replace('},', '}\n')
-    print(json_reform)
-
-    s3_resource = boto3.resource('s3')
-    key2 = 'ticketmaster_events.json'
-    s3_resource.Object(bucket, key2).put(Body=json_reform)
 
 
-pickle_pull()
-
-
-
+seatgeek_translate = pkl_to_json('seatgeek')
+seatgeek_translate.json_put(seatgeek_translate.pickle_pull())
 
 
 
