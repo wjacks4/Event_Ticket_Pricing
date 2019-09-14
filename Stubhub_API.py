@@ -208,7 +208,7 @@ def stubhub_event_pull():
                             event_array = pd.DataFrame([[artist, '', event_name, event_id, event_venue, event_city,
                                                          event_state, event_date_UTC, lowest_price, highest_price,
                                                          ticket_count, listing_count, current_date]],
-                                                       columns=['artist', 'artist_id', 'name', 'event_id', 'venue', 'city',
+                                                       columns=['artist', 'artist_id', 'name', 'ID', 'venue', 'city',
                                                                 'state', 'date_UTC', 'lowest_price', 'highest_price',
                                                                 'ticket_count', 'listing_count', 'create_ts'])
 
@@ -550,6 +550,7 @@ def stubhub_event_pull():
         s3_resource = boto3.resource('s3')
         new_event_json = master_event_df.to_json(orient='records')
         s3_resource.Object(bucket, key).put(Body=new_event_json)
+
 
     except s3_client.exceptions.NoSuchKey:
 

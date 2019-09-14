@@ -185,7 +185,7 @@ def seatgeek_events():
                         event_date_utc, lowest_price, highest_price, avg_price, med_price, no_listings,
                         current_date)
 
-                    event_QL = 'INSERT INTO `SEATGEEK_EVENTS` (`artist`, `name`, `event_id`, `venue`, `capacity`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `average_price`, `median_price`, `listing_count`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
+                    event_QL = 'INSERT INTO `SEATGEEK_EVENTS` (`artist`, `name`, `id`, `venue`, `capacity`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `average_price`, `median_price`, `listing_count`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
 
                     connection = pymysql.connect(host='ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com',
                                                               user='tickets_user', password='tickets_pass', db='tickets_db')
@@ -222,7 +222,7 @@ def seatgeek_events():
                     event_array = pd.DataFrame([[artist, event_name, event_id, event_venue, event_capacity,
                                                  event_city, event_state, event_date_utc, lowest_price, highest_price,
                                                  avg_price, med_price, no_listings, current_date]],
-                                               columns=['artist', 'name', 'event_id', 'venue', 'capacity', 'city',
+                                               columns=['artist', 'name', 'id', 'venue', 'capacity', 'city',
                                                         'state', 'date_UTC', 'lowest_price', 'highest_price', 'average_price',
                                                         'median_price', 'listing_count', 'create_ts'])
 

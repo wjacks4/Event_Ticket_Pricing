@@ -32,6 +32,8 @@ import pymysql
 import base64
 import datetime
 from datetime import datetime
+import fuzzywuzzy
+from fuzzywuzzy import fuzz
 import pytz
 
 """PRINT TO LOG FOR MONITORING PURPOSES"""
@@ -55,6 +57,7 @@ def data_fetch_pymysql():
                                   password = 'tickets_pass',
                                   db = 'tickets_db')
     artists_df = pd.read_sql('SELECT * FROM ARTISTS_WITH_EVENTS order by event_count desc, current_followers desc', con = connection)
+    # artists_df = pd.read_sql('SELECT * FROM ARTISTS_WITH_EVENTS WHERE ARTIST = "Tedeschi Trucks Band" order by event_count desc, current_followers desc', con = connection)
     return artists_df
 
 
@@ -138,7 +141,7 @@ def ticketmaster_event_pull():
             if i <= 250:
             # if i <10:
 
-                access_string = (event_base_url + api_key1 + '&size=10&keyword=' + artist_keyword)
+                access_string = (event_base_url + api_key1 + '&size=25&keyword=' + artist_keyword)
 
                 try:
                     raw_Dat = urllib.request.urlopen(access_string)
@@ -155,75 +158,66 @@ def ticketmaster_event_pull():
 
                             try:
                                 event_name = event['name']
+                                print(event_name)
                             except KeyError as noName:
                                 event_name = 'NA'
 
-                            try:
-                                event_venue = event['_embedded']['venues'][0]['name']
-                            except KeyError as noVenue:
-                                event_venue = 'NA'
+                            spotify_name = spotify_artist
+                            ticketmaster_name = event_name
 
-                            try:
-                                event_city = event['_embedded']['venues'][0]['city']['name']
-                            except KeyError as noCity:
-                                event_city = 'NA'
+                            fuzz_partial = fuzz.partial_ratio(spotify_name.lower(), ticketmaster_name.lower())
+                            fuzz_ratio = fuzz.ratio(spotify_name.lower(), ticketmaster_name.lower())
 
-                            try:
-                                event_state = event['venues'][0]['state']['name']
-                            except KeyError as noState:
-                                event_state = 'NA'
+                            if (fuzz_ratio + fuzz_partial) > 150:
 
-                            try:
-                                date_UTC = event['dates']['start']['dateTime']
-                            except KeyError as noEventTime:
-                                date_UTC = 'NA'
+                                try:
+                                    event_venue = event['_embedded']['venues'][0]['name']
+                                except KeyError as noVenue:
+                                    event_venue = 'NA'
 
-                            try:
-                                event_sale_start = event['sales']['public']['startDateTime']
-                            except KeyError as noSaleStart:
-                                event_sale_start = 'NA'
+                                try:
+                                    event_city = event['_embedded']['venues'][0]['city']['name']
+                                except KeyError as noCity:
+                                    event_city = 'NA'
 
-                            try:
-                                event_lowest_price = event['priceRanges'][0]['min']
-                            except KeyError as noPriceDat:
-                                event_lowest_price = ''
+                                try:
+                                    event_state = event['venues'][0]['state']['name']
+                                except KeyError as noState:
+                                    event_state = 'NA'
 
-                            try:
-                                event_highest_price = event['priceRanges'][0]['max']
-                            except KeyError as noPriceDat:
-                                event_highest_price = ''
+                                try:
+                                    date_UTC = event['dates']['start']['dateTime']
+                                except KeyError as noEventTime:
+                                    date_UTC = 'NA'
 
-                            """MYSQL INSERTION"""
-                            insert_tuple = (spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, date_UTC, event_sale_start, event_lowest_price, event_highest_price, current_date)
+                                try:
+                                    event_sale_start = event['sales']['public']['startDateTime']
+                                except KeyError as noSaleStart:
+                                    event_sale_start = 'NA'
 
-                            event_QL = 'INSERT INTO TICKETMASTER_EVENTS(artist, artist_id, name, id, venue, city, state, date_UTC, sale_start, lowest_price, highest_price, create_ts) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);'
+                                try:
+                                    event_lowest_price = event['priceRanges'][0]['min']
+                                except KeyError as noPriceDat:
+                                    event_lowest_price = ''
 
-                            cursor.execute(event_QL, insert_tuple)
-                            connection.commit()
+                                try:
+                                    event_highest_price = event['priceRanges'][0]['max']
+                                except KeyError as noPriceDat:
+                                    event_highest_price = ''
 
-                            """DYNAMO WAY TO DO IT"""
-                            record_key = (spotify_artist + event_name + event_venue + event_city + event_state + str(date_UTC) + str(current_date))
+                                """MYSQL INSERTION"""
+                                insert_tuple = (spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, date_UTC, event_sale_start, event_lowest_price, event_highest_price, current_date)
 
-                            try:
-                                dynamotable.put_item(
-                                    Item={
-                                        'Record_ID':record_key,
-                                        'name': event_name,
-                                        'artist': spotify_artist,
-                                        'city': event_city,
-                                        'date_UTC': str(date_UTC),
-                                        'state': event_state,
-                                        'venue': event_venue,
-                                        'create_ts': str(current_date),
-                                        'lowest_price': int(event_lowest_price),
-                                        'highest_price': int(event_highest_price)
-                                    }
-                                )
+                                event_QL = 'INSERT INTO TICKETMASTER_EVENTS(artist, artist_id, name, id, venue, city, state, date_UTC, sale_start, lowest_price, highest_price, create_ts) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);'
 
-                            except ValueError as NoPrice:
+                                cursor.execute(event_QL, insert_tuple)
+                                connection.commit()
+
+                                """DYNAMO WAY TO DO IT"""
+                                record_key = (spotify_artist + event_name + event_venue + event_city + event_state + str(date_UTC) + str(current_date))
+
                                 try:
                                     dynamotable.put_item(
-
                                         Item={
                                             'Record_ID':record_key,
                                             'name': event_name,
@@ -232,18 +226,36 @@ def ticketmaster_event_pull():
                                             'date_UTC': str(date_UTC),
                                             'state': event_state,
                                             'venue': event_venue,
-                                            'create_ts': str(current_date)
+                                            'create_ts': str(current_date),
+                                            'lowest_price': int(event_lowest_price),
+                                            'highest_price': int(event_highest_price)
                                         }
                                     )
 
-                                except ValueError as MissingData:
-                                    print('Too much missing data')
+                                except ValueError as NoPrice:
+                                    try:
+                                        dynamotable.put_item(
 
-                            """S3 NEW DATA CREATION"""
-                            event_array=pd.DataFrame([[spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, date_UTC, event_sale_start, event_lowest_price, event_highest_price, current_date]],
-                                          columns=['artist', 'artist_id', 'name', 'event_id', 'venue', 'city', 'state', 'date_UTC', 'sale_start_date', 'lowest_price', 'highest_price', 'create_ts'])
+                                            Item={
+                                                'Record_ID':record_key,
+                                                'name': event_name,
+                                                'artist': spotify_artist,
+                                                'city': event_city,
+                                                'date_UTC': str(date_UTC),
+                                                'state': event_state,
+                                                'venue': event_venue,
+                                                'create_ts': str(current_date)
+                                            }
+                                        )
 
-                            temp_df = temp_df.append(event_array, ignore_index=True, sort=True)
+                                    except ValueError as MissingData:
+                                        print('Too much missing data')
+
+                                """S3 NEW DATA CREATION"""
+                                event_array=pd.DataFrame([[spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, date_UTC, event_sale_start, event_lowest_price, event_highest_price, current_date]],
+                                              columns=['artist', 'artist_id', 'name', 'event_id', 'venue', 'city', 'state', 'date_UTC', 'sale_start_date', 'lowest_price', 'highest_price', 'create_ts'])
+
+                                temp_df = temp_df.append(event_array, ignore_index=True, sort=True)
 
                     except KeyError as NoEmbedded:
                         print('No Embedded Data')
@@ -369,9 +381,9 @@ def ticketmaster_event_pull():
                                                          event_venue, event_city, event_state, date_UTC,
                                                          event_sale_start, event_lowest_price, event_highest_price,
                                                          current_date]],
-                                                       columns=['artist', 'artist_id', 'attraction_name', 'event_id',
-                                                                'venue', 'city', 'state', 'date_UTC', 'sale_start_date',
-                                                                'event_lowest_price', 'event_highest_price',
+                                                       columns=['artist', 'artist_id', 'name', 'id',
+                                                                'venue', 'city', 'state', 'date_UTC', 'sale_start',
+                                                                'lowest_price', 'highest_price',
                                                                 'create_ts'])
 
                             temp_df = temp_df.append(event_array, ignore_index=True, sort=True)
