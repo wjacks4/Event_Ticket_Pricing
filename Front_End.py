@@ -65,17 +65,17 @@ class event_df:
         self.master_event_df = pd.DataFrame.from_dict(event_json)
 
 
-# tm_df = event_df('willjeventdata', 'ticketmaster_events.pkl')
-# sg_df = event_df('willjeventdata', 'seatgeek_events.pkl')
+tm_df = event_df('willjeventdata', 'ticketmaster_events.pkl')
+sg_df = event_df('willjeventdata', 'seatgeek_events.pkl')
 sh_df = event_df('willjeventdata', 'stubhub_events.pkl')
-# eb_df = event_df('willjeventdata', 'eventbrite_events.pkl')
+eb_df = event_df('willjeventdata', 'eventbrite_events.pkl')
 
 
 
-# print(tm_df.master_event_df.columns)
-# print(sg_df.master_event_df.columns)
+print(tm_df.master_event_df.columns)
+print(sg_df.master_event_df.columns)
 print(sh_df.master_event_df.columns)
-# print(eb_df.master_event_df.columns)
+print(eb_df.master_event_df.columns)
 
 # test_tm = tm_df.master_event_df.head(10)
 # test_sg = sg_df.master_event_df.head(10)
