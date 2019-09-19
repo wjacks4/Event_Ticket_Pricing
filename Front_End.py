@@ -64,7 +64,7 @@ class event_df:
 
 # tm_df = event_df('willjeventdata', 'ticketmaster_events.pkl')
 # print(tm_df.master_event_df.head(10))
-sg_df = event_df('willjeventdata', 'seatgeek_events.pkl')
+# sg_df = event_df('willjeventdata', 'seatgeek_events.pkl')
 # print(sg_df.master_event_df.head(10))
 # sh_df = event_df('willjeventdata', 'stubhub_events.pkl')
 # print(sh_df.master_event_df.head(10))
@@ -74,6 +74,9 @@ sg_df = event_df('willjeventdata', 'seatgeek_events.pkl')
 
 # print(tm_df.master_event_df.columns)
 print(sg_df.master_event_df.columns)
+columns_string = str(sg_df.master_event_df.columns.values).replace('[', '').replace(']', '').replace("' ", "',")
+print(columns_string)
+
 # print(sh_df.master_event_df.columns)
 # print(eb_df.master_event_df.columns)
 

@@ -39,12 +39,12 @@ import boto3
 
 
 
-class pkl_to_json:
+class s3_table_creator:
 
     def __init__(self, source):
         self.bucket_pkl_string = str(source + '_events.pkl')
         self.new_json_string = str(source + '_events.json')
-        
+        self.table = str(source+'_events') 
     
     def pickle_pull(self):
         s3_client = boto3.client('s3')
@@ -55,9 +55,10 @@ class pkl_to_json:
         event_json = json.loads(event_dict.decode('utf8'))
         master_event_df = pd.DataFrame.from_dict(event_json)
         print('The S3 JSON list now has ' + str(len(master_event_df)) + ' records')
-    
         test_df = master_event_df.head(10)
-        return(test_df)
+        colums = test_df.columns()
+        columns_string = str(test_df.columns.values).replace('[', '').replace(']', '').replace("' ", "',")
+        return(columns_string)
     
     def json_put(self, input_df):
         bucket='willjeventdata'
@@ -72,13 +73,6 @@ class pkl_to_json:
         s3_resource.Object(bucket, key2).put(Body=json_reform)
 
 
-
-
-class athena_tables:
-
-    def __init__(self, source):
-        self.table = str(source+'_events')
-    
     def athena_drop(self):
         athena_client = boto3.client('athena')
         response = athena_client.start_query_execution(
@@ -86,6 +80,21 @@ class athena_tables:
         QueryExecutionContext ={'Database':'tickets_db'},
         ResultConfiguration={'OutputLocation':'s3://aws-athena-results-tickets-db/stubhub/'})
         
+        
+    def athena_create(self):
+        athena_client = boto3.client('athena')
+        response = athena_client.start_query_execution(
+        QueryString = ('create table ' + self.table ' ),
+        QueryExecutionContext ={'Database':'tickets_db'},
+        ResultConfiguration={'OutputLocation':'s3://aws-athena-results-tickets-db/stubhub/'})
+        
+        
+
+class athena_tables:
+
+    def __init__(self, source):
+        
+    
 
 
 #seatgeek_translate = pkl_to_json('seatgeek')
