@@ -73,9 +73,10 @@ class event_df:
 
 
 # print(tm_df.master_event_df.columns)
-print(sg_df.master_event_df.columns)
-columns_string = str(sg_df.master_event_df.columns.values).replace('[', '').replace(']', '').replace("' ", "',")
+print(sg_df.master_event_df.columns.values)
+columns_string = str(sg_df.master_event_df.columns.values).replace("['", "`").replace(" '", " `").replace("']", '` string').replace("' ", "` string, ").replace("'\n", "` string, ")
 print(columns_string)
+
 
 # print(sh_df.master_event_df.columns)
 # print(eb_df.master_event_df.columns)

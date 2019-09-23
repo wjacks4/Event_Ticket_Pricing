@@ -44,6 +44,7 @@ class s3_table_creator:
     def __init__(self, source):
         self.bucket_pkl_string = str(source + '_events.pkl')
         self.new_json_string = str(source + '_events.json')
+        self.source_str = str(source)
         self.table = str(source+'_events') 
     
     def pickle_pull(self):
@@ -56,8 +57,7 @@ class s3_table_creator:
         master_event_df = pd.DataFrame.from_dict(event_json)
         print('The S3 JSON list now has ' + str(len(master_event_df)) + ' records')
         test_df = master_event_df.head(10)
-        colums = test_df.columns()
-        columns_string = str(test_df.columns.values).replace('[', '').replace(']', '').replace("' ", "',")
+        columns_string = str(test_df.columns.values).replace("['", "`").replace(" '", " `").replace("']", '` string').replace("' ", "` string, ").replace("'\n", "` string, ")
         return(columns_string)
     
     def json_put(self, input_df):
@@ -81,18 +81,20 @@ class s3_table_creator:
         ResultConfiguration={'OutputLocation':'s3://aws-athena-results-tickets-db/stubhub/'})
         
         
-    def athena_create(self):
+    def athena_create(self, columns):
+        query_string = ('create external table if not exists ' + self.table + 
+                ' (' + columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" LOCATION "s3://willjeventdata/'
+                + self.source_str + '/" TBLPROPERTIES ("has_encrypted_data"="false")')
+        print(query_string)
         athena_client = boto3.client('athena')
         response = athena_client.start_query_execution(
-        QueryString = ('create table ' + self.table ' ),
+        QueryString = ('create external table if not exists ' + self.table + 
+                ' (' + columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" LOCATION "s3://willjeventdata/'
+                + self.source_str + '/" TBLPROPERTIES ("has_encrypted_data"="false")'),
         QueryExecutionContext ={'Database':'tickets_db'},
         ResultConfiguration={'OutputLocation':'s3://aws-athena-results-tickets-db/stubhub/'})
         
         
-
-class athena_tables:
-
-    def __init__(self, source):
         
     
 
@@ -110,9 +112,9 @@ class athena_tables:
 #eventbrite_translate.json_put(eventbrite_translate.pickle_pull()
         
 
-stubhub_athena = athena_tables('stubhub')
-stubhub_athena.athena_drop()
-
+stubhub_athena = s3_table_creator('stubhub')
+# stubhub_athena.athena_drop()
+stubhub_athena.athena_create(stubhub_athena.pickle_pull())
 
 
 

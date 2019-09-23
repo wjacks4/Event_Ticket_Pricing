@@ -26,7 +26,6 @@ import pymysql
 import base64
 import datetime
 from datetime import datetime
-import easydict
 from collections import defaultdict
 import pickle
 import pprint
