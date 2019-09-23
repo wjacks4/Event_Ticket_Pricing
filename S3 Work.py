@@ -147,9 +147,9 @@ def create_ticketmaster_s3():
     connection = connection = pymysql.connect(host='ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com',
                                               user='tickets_user', password='tickets_pass', db='tickets_db')
 
-    ticketmaster_df = pd.read_sql('SELECT * FROM TICKETMASTER_EVENTS LIMIT 1000', con=connection)
+    ticketmaster_df = pd.read_sql('SELECT * FROM TICKETMASTER_EVENTS', con=connection)
 
-    print((ticketmaster_df).head(20))
+    # print((ticketmaster_df).head(20))
 
     ticketmaster_json = ticketmaster_df.to_json(orient='records')
 

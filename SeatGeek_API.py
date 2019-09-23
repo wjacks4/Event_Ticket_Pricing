@@ -62,7 +62,7 @@ def seatgeek_events():
     """
 
     """GET ARTISTS DATAFRAME"""
-    artists_df = data_fetch_pymysql().head(250)['artist']
+    artists_df = data_fetch_pymysql().head(1)['artist']
 
     """CURRENT DATE ASSIGNMENT"""
     current_date = datetime.now()
@@ -77,6 +77,7 @@ def seatgeek_events():
         s3_client = boto3.client('s3')
         bucket = 'willjeventdata'
         key = 'seatgeek_events.pkl'
+        key_json = 'seatgeek/seatgeek_events.json'
         response = s3_client.get_object(Bucket=bucket, Key=key)
         event_dict = (response['Body'].read())
         event_json = json.loads(event_dict.decode('utf8'))
@@ -185,7 +186,7 @@ def seatgeek_events():
                         event_date_utc, lowest_price, highest_price, avg_price, med_price, no_listings,
                         current_date)
 
-                    event_QL = 'INSERT INTO `SEATGEEK_EVENTS` (`artist`, `name`, `event_id`, `venue`, `capacity`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `average_price`, `median_price`, `listing_count`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
+                    event_QL = 'INSERT INTO `SEATGEEK_EVENTS` (`artist`, `name`, `id`, `venue`, `capacity`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `average_price`, `median_price`, `listing_count`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
 
                     connection = pymysql.connect(host='ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com',
                                                               user='tickets_user', password='tickets_pass', db='tickets_db')
@@ -222,7 +223,7 @@ def seatgeek_events():
                     event_array = pd.DataFrame([[artist, event_name, event_id, event_venue, event_capacity,
                                                  event_city, event_state, event_date_utc, lowest_price, highest_price,
                                                  avg_price, med_price, no_listings, current_date]],
-                                               columns=['artist', 'name', 'event_id', 'venue', 'capacity', 'city',
+                                               columns=['artist', 'name', 'id', 'venue', 'capacity', 'city',
                                                         'state', 'date_UTC', 'lowest_price', 'highest_price', 'average_price',
                                                         'median_price', 'listing_count', 'create_ts'])
 
@@ -235,12 +236,18 @@ def seatgeek_events():
 
         """APPEND LOCAL DF TO MASTER DF PULLED FROM S3"""
         master_event_df = master_event_df.append(temp_df, sort=True)
+
         print('The S3 JSON list now has ' + str(len(master_event_df)) + ' records')
 
-        """S3 UPDATE"""
+        """S3 UPDATE PKL"""
         s3_resource = boto3.resource('s3')
         new_event_json = master_event_df.to_json(orient='records')
         s3_resource.Object(bucket,key).put(Body=new_event_json)
+        print('successfully overwrote main PKL file')
+
+        """S3 UPDATE .JSON"""
+        json_reform = new_event_json.replace('[{', '{').replace(']}', '}').replace('},', '}\n')
+        s3_resource.Object(bucket, key_json).put(Body=json_reform)
 
     except s3_client.exceptions.NoSuchKey:
 

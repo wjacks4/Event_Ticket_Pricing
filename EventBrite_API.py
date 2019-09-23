@@ -93,6 +93,7 @@ def eventbrite_event_pull():
     try:
         bucket = 'willjeventdata'
         key = 'eventbrite_events.pkl'
+        key_json = 'eventbrite/eventbrite_events.pkl'
         response = s3_client.get_object(Bucket=bucket, Key=key)
         event_dict = (response['Body'].read())
         event_json = json.loads(event_dict.decode('utf8'))
@@ -207,6 +208,10 @@ def eventbrite_event_pull():
         s3_resource = boto3.resource('s3')
         new_event_json = master_event_df.to_json(orient='records')
         s3_resource.Object(bucket,key).put(Body=new_event_json)
+
+        """S3 UPDATE .JSON"""
+        json_reform = new_event_json.replace('[{', '{').replace(']}', '}').replace('},', '}\n')
+        s3_resource.Object(bucket, key_json).put(Body=json_reform)
 
     except s3_client.exceptions.NoSuchKey:
 
