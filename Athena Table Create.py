@@ -37,27 +37,29 @@ import boto3
 
 """IMPORT PICKLE FROM S3, SAVE AS LARGE JSON OBJ"""
 
-
-
 class s3_table_creator:
 
     def __init__(self, source):
         self.bucket_pkl_string = str(source + '_events.pkl')
         self.new_json_string = str(source + '_events.json')
         self.source_str = str(source)
-        self.table = str(source+'_events') 
+        self.table = str(source+'_events2')
     
     def pickle_pull(self):
         s3_client = boto3.client('s3')
         bucket = 'willjeventdata'
         key = self.bucket_pkl_string
         response = s3_client.get_object(Bucket=bucket, Key=key)
+        print('got response')
         event_dict = (response['Body'].read())
+        print('read response to dict')
         event_json = json.loads(event_dict.decode('utf8'))
-        master_event_df = pd.DataFrame.from_dict(event_json)
-        print('The S3 JSON list now has ' + str(len(master_event_df)) + ' records')
+        print('decoded response')
+        master_event_df = (pd.DataFrame.from_dict(event_json)).head(10)
+        print('got df')
         test_df = master_event_df.head(10)
-        columns_string = str(test_df.columns.values).replace("['", "`").replace(" '", " `").replace("']", '` string').replace("' ", "` string, ").replace("'\n", "` string, ")
+        columns_string = str(test_df.columns.values).replace("['", "`").replace(" '", " `").replace("']", '` string').replace("' ", "` string, ").replace("'\n", "` string, ").replace("`date_UTC` string", "`date_UTC` timestamp").replace("`create_ts` string", "`create_ts` timestamp")
+        print(columns_string)
         return(columns_string)
     
     def json_put(self, input_df):
@@ -81,18 +83,23 @@ class s3_table_creator:
         ResultConfiguration={'OutputLocation':'s3://aws-athena-results-tickets-db/stubhub/'})
         
         
-    def athena_create(self, columns):
-        query_string = ('create external table if not exists ' + self.table + 
-                ' (' + columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" LOCATION "s3://willjeventdata/'
-                + self.source_str + '/" TBLPROPERTIES ("has_encrypted_data"="false")')
-        print(query_string)
+    def athena_create(self, main_columns):
+        querystring = str(('create external table if not exists ' + self.table +
+                ' (' + main_columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" LOCATION "s3://willjeventdata/'
+                + self.source_str + '/" TBLPROPERTIES ("has_encrypted_data"="false")'))
+        print(querystring)
         athena_client = boto3.client('athena')
         response = athena_client.start_query_execution(
         QueryString = ('create external table if not exists ' + self.table + 
-                ' (' + columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" LOCATION "s3://willjeventdata/'
+                ' (' + main_columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" LOCATION "s3://willjeventdata/'
                 + self.source_str + '/" TBLPROPERTIES ("has_encrypted_data"="false")'),
         QueryExecutionContext ={'Database':'tickets_db'},
         ResultConfiguration={'OutputLocation':'s3://aws-athena-results-tickets-db/stubhub/'})
+
+
+    def athena_daily_max_create(self, day_columns):
+        athena_client = boto3.client('athena')
+        # response = athena_client.start_query_execution()
         
         
         
@@ -113,6 +120,7 @@ class s3_table_creator:
         
 
 stubhub_athena = s3_table_creator('stubhub')
+# stubhub_athena.pickle_pull()
 # stubhub_athena.athena_drop()
 stubhub_athena.athena_create(stubhub_athena.pickle_pull())
 
