@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Sep 26 16:52:56 2019
+
+@author: bswxj01
+"""
+
 """
 SEATGEEK API DATA PULL
 """
@@ -10,6 +17,7 @@ import json
 import requests
 import boto3
 import ast
+
 
 """PRINT TO LOG FOR MONITORING PURPOSES"""
 current_date = datetime.now()
@@ -24,7 +32,6 @@ client_secret_str = ('c49766eaad2bc8bc33810d112d141ca9a09b0a78b1be52c459eb19c5fd
 def xstr(s):
     return '' if s is None else s
 
-
 def data_fetch_pymysql():
     connection = pymysql.connect(host='ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com',
                                  user='tickets_user',
@@ -33,12 +40,6 @@ def data_fetch_pymysql():
 
     artists_df = pd.read_sql('SELECT * FROM ARTISTS_WITH_EVENTS order by event_count desc, current_followers desc', con=connection)
     return artists_df
-
-
-# data_fetch_pymysql()
-
-
-"""GET EVENTS FROM SEATGEEK API, LOAD TO MYSQL DB"""
 
 
 def seatgeek_events():
@@ -63,7 +64,7 @@ def seatgeek_events():
     """
 
     """GET ARTISTS DATAFRAME"""
-    artists_df = data_fetch_pymysql().head(1)['artist']
+    artists_df = data_fetch_pymysql().head(3)['artist']
 
     """CURRENT DATE ASSIGNMENT"""
     current_date = datetime.now()
@@ -82,8 +83,7 @@ def seatgeek_events():
         response = s3_client.get_object(Bucket=bucket, Key=key)
         event_dict = (response['Body'].read())
         event_dict_decode = event_dict.decode('utf-8')
-        print(event_dict_decode)
-        event_dict_dict = ast.literal_eval(event_dict_decode)
+        event_dict_dict = json.loads(event_dict_decode)
         # event_json = json.loads(event_dict.decode('utf8'))
         # master_event_df = pd.DataFrame.from_dict(event_json)
         # print('The S3 JSON list started with ' + str(len(master_event_df)) + ' records')
@@ -240,9 +240,10 @@ def seatgeek_events():
                 
         """MAKE DICT FROM NEW DATA DATAFRAME"""
         temp_dict = temp_df.to_dict('records')
+        print(temp_dict)
         
         """MERGE TEMP DICT AND MASTER DICT"""
-        new_event_dict = event_dict_dict.update(temp_dict)
+        new_event_dict = event_dict_dict.append(temp_dict)
 
         """APPEND LOCAL DF TO MASTER DF PULLED FROM S3"""
         # master_event_df = master_event_df.append(temp_df, sort=True)
@@ -266,11 +267,3 @@ def seatgeek_events():
     except s3_client.exceptions.NoSuchKey:
 
         print('THE S3 BUCKET SOMEHOW GOT DELETED...')
-
-
-seatgeek_events()
-
-
-"""PRINT TO LOG FOR MONITORING PURPOSES"""
-current_date = datetime.now()
-print('THIS PROGRAM FINISHED AT ' + str(current_date))
