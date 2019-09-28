@@ -98,7 +98,7 @@ def seatgeek_events():
     """
 
     """GET ARTISTS DATAFRAME"""
-    artists_df = data_fetch_pymysql().head(250)['artist']
+    artists_df = data_fetch_pymysql().head(3)['artist']
 
     """CURRENT DATE ASSIGNMENT"""
     current_date = datetime.now()
@@ -117,9 +117,14 @@ def seatgeek_events():
         response = s3_client.get_object(Bucket=bucket, Key=key)
         event_dict = (response['Body'].read())
         event_json = json.loads(event_dict.decode('utf8'))
+        print('event_json has type of ' + str(type(event_json)))
         master_event_df = pd.DataFrame.from_dict(event_json)
         print('The S3 JSON list started with ' + str(len(master_event_df)) + ' records')
         temp_df = pd.DataFrame()
+
+        """DICT APPEND STAGING"""
+        event_dict_decode = event_dict.decode('utf-8')
+        event_dict_dict = json.loads(event_dict_decode)
 
         """INITIALIZE INCREMENTING VARIABLE"""
         i = 1
@@ -276,35 +281,51 @@ def seatgeek_events():
                 print('NO RELATED SEATGEEK EVENTS')
 
         """APPEND LOCAL DF TO MASTER DF PULLED FROM S3"""
-        # master_event_df = master_event_df.append(temp_df, sort=True)
+        master_event_df = master_event_df.append(temp_df, sort=True)
 
         # print('The S3 JSON list now has ' + str(len(master_event_df)) + ' records')
+        print('The DF Append Method resulted in ' + str(len(master_event_df)) + ' records')
 
-        """S3 OVERWRITE PREVIOUS TEMP FILE"""
-        s3_resource = boto3.resource('s3')
-        new_event_json = temp_df.to_json(orient='records')
-        json_reform = new_event_json.replace('[{', '{').replace(']}', '}').replace('},', '}\n')
-        s3_resource.Object(bucket, 'seatgeek/temp/seatgeek_temp.json').put(Body=json_reform)
+        """DICT APPEND METHOD"""
+        """MAKE DICT FROM TEMP DATAFRAME"""
+        temp_dict = temp_df.to_dict('records')
 
-        """ATHENA CREATE TEMP TABLE"""
-        columns_string = str(temp_df.columns.values).replace("['", "`").replace(" '", " `").replace("']", '` string').replace("' ", "` string, ").replace("'\n", "` string, ").replace("`date_UTC` string", "`date_UTC` timestamp").replace("`create_ts` string", "`create_ts` timestamp")
-        print(columns_string)
-        athena_drop()
-        time.sleep(15)
-        athena_create_temp(columns_string)
+        """MERGE TEMP DICT AND MASTER DICT"""
+        base_dict = event_json
+        new_dict = temp_dict
+        appended_dict = base_dict + new_dict
 
-        """ATHENA APPEND TEMP TO MAIN"""
-        athena_append()
+        """CHECK TO SEE IF SAME RESULTS ACHIEVED BY DICT APPEND AND DF APPEND"""
+        appended_df = pd.DataFrame.from_dict(appended_dict)
+        print('The dict append method resulted in ' + str(len(appended_df)) + ' records')
 
-        """S3 UPDATE PKL"""
-        s3_resource = boto3.resource('s3')
-        new_event_json = master_event_df.to_json(orient='records')
-        s3_resource.Object(bucket,key).put(Body=new_event_json)
-        print('successfully overwrote main PKL file')
 
-        """S3 UPDATE .JSON"""
-        json_reform = new_event_json.replace('[{', '{').replace(']}', '}').replace('},', '}\n')
-        s3_resource.Object(bucket, key_json).put(Body=json_reform)
+        """S3 WORK"""
+        # """S3 OVERWRITE PREVIOUS TEMP FILE"""
+        # s3_resource = boto3.resource('s3')
+        # new_event_json = temp_df.to_json(orient='records')
+        # json_reform = new_event_json.replace('[{', '{').replace(']}', '}').replace('},', '}\n')
+        # s3_resource.Object(bucket, 'seatgeek/temp/seatgeek_temp.json').put(Body=json_reform)
+        #
+        # """ATHENA CREATE TEMP TABLE"""
+        # columns_string = str(temp_df.columns.values).replace("['", "`").replace(" '", " `").replace("']", '` string').replace("' ", "` string, ").replace("'\n", "` string, ").replace("`date_UTC` string", "`date_UTC` timestamp").replace("`create_ts` string", "`create_ts` timestamp")
+        # print(columns_string)
+        # athena_drop()
+        # time.sleep(15)
+        # athena_create_temp(columns_string)
+        #
+        # """ATHENA APPEND TEMP TO MAIN"""
+        # athena_append()
+        #
+        # """S3 UPDATE PKL"""
+        # s3_resource = boto3.resource('s3')
+        # new_event_json = master_event_df.to_json(orient='records')
+        # s3_resource.Object(bucket,key).put(Body=new_event_json)
+        # print('successfully overwrote main PKL file')
+        #
+        # """S3 UPDATE .JSON"""
+        # json_reform = new_event_json.replace('[{', '{').replace(']}', '}').replace('},', '}\n')
+        # s3_resource.Object(bucket, key_json).put(Body=json_reform)
 
     except s3_client.exceptions.NoSuchKey:
 

@@ -81,9 +81,13 @@ def seatgeek_events():
         key = 'seatgeek_events.pkl'
         key_json = 'seatgeek/seatgeek_events.json'
         response = s3_client.get_object(Bucket=bucket, Key=key)
+        print(type(response))
         event_dict = (response['Body'].read())
+        print(type(event_dict))
         event_dict_decode = event_dict.decode('utf-8')
-        event_dict_dict = json.loads(event_dict_decode)
+        print(type(event_dict_decode))
+        event_json = json.loads(event_dict_decode)
+        print(type(event_json))
         # event_json = json.loads(event_dict.decode('utf8'))
         # master_event_df = pd.DataFrame.from_dict(event_json)
         # print('The S3 JSON list started with ' + str(len(master_event_df)) + ' records')
@@ -239,11 +243,27 @@ def seatgeek_events():
                 print('NO RELATED SEATGEEK EVENTS')
                 
         """MAKE DICT FROM NEW DATA DATAFRAME"""
+
+        """TURN TEMP DF INTO A DICT (WHICH IS REALLY A LIST)"""
         temp_dict = temp_df.to_dict('records')
+        print(type(temp_dict))
         print(temp_dict)
+
+        """CHECK WHAT FORMAT IS REQUIRED FOR INSERTION BACK INTO S3 (STRING)"""
+        temp_dict_json = temp_df.to_json(orient='records')
+        print(type(temp_dict_json))
+        print(temp_dict_json)
+
+        """CHECK THE FORMAT OF THE ALREADY EXISTENT S3 FILE WE PULLED - NEEDS TO BE CONSISTENT WITH THE TEMP DATA WE JSUT COLLECTED"""
+        print(type(event_json))
+        print(event_json[1])
+
         
         """MERGE TEMP DICT AND MASTER DICT"""
-        new_event_dict = event_dict_dict.append(temp_dict)
+        new_event_dict = event_json.append(temp_dict)
+        test_out = json.dumps(new_event_dict)
+        print(type(test_out))
+        print(test_out)
 
         """APPEND LOCAL DF TO MASTER DF PULLED FROM S3"""
         # master_event_df = master_event_df.append(temp_df, sort=True)
@@ -267,3 +287,6 @@ def seatgeek_events():
     except s3_client.exceptions.NoSuchKey:
 
         print('THE S3 BUCKET SOMEHOW GOT DELETED...')
+
+
+seatgeek_events()
