@@ -44,7 +44,7 @@ def data_fetch_pymysql():
 def athena_drop():
     athena_client = boto3.client('athena')
     response = athena_client.start_query_execution(
-    QueryString = ('drop table seatgeek_stg'),
+    QueryString = ('drop table seatgeek_events'),
     QueryExecutionContext ={'Database':'tickets_db'},
     ResultConfiguration={'OutputLocation':'s3://aws-athena-results-tickets-db/seatgeek/'}
     )
