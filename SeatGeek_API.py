@@ -44,15 +44,9 @@ def data_fetch_pymysql():
 def athena_drop():
     athena_client = boto3.client('athena')
     response = athena_client.start_query_execution(
-<<<<<<< HEAD
         QueryString = ('drop table seatgeek_events'),
         QueryExecutionContext ={'Database':'tickets_db'},
         ResultConfiguration={'OutputLocation':'s3://aws-athena-results-tickets-db/seatgeek/'}
-=======
-    QueryString = ('drop table seatgeek_events'),
-    QueryExecutionContext ={'Database':'tickets_db'},
-    ResultConfiguration={'OutputLocation':'s3://aws-athena-results-tickets-db/seatgeek/'}
->>>>>>> 9c49e611334ed370fb801c90a81b837ae255bac2
     )
 
 
@@ -281,10 +275,6 @@ def seatgeek_events():
 
                     temp_df = temp_df.append(event_array, ignore_index=True, sort=True)
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 9c49e611334ed370fb801c90a81b837ae255bac2
             except IndexError as e:
 
                 print('NO RELATED SEATGEEK EVENTS')
