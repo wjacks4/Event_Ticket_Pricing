@@ -2,33 +2,17 @@
 EVENTBRITE API DATA PULL
 """
 
-# import mysql
-# from mysql.connector import Error
-# import psycopg2 as p
 import json
-from dateutil import parser
 import time
-import os
-import subprocess
-import urllib
-from pprint import pprint
 import urllib.request
 import pandas as pd
 import unidecode
 from unidecode import unidecode
-import requests
 import urllib
-from urllib import parse
-import sys
-import base64
-import numpy as np
-# import mysql-python
 import pymysql
 import boto3
-import base64
 import datetime
 from datetime import datetime
-import fuzzywuzzy
 from fuzzywuzzy import fuzz
 
 """PRINT TO LOG FOR MONITORING PURPOSES"""
@@ -53,8 +37,63 @@ def data_fetch_pymysql():
     artists_df = pd.read_sql('SELECT * FROM ARTISTS_WITH_EVENTS order by event_count desc, current_followers desc', con=connection)
     return artists_df
 
-
 # data_fetch_pymysql()
+
+def myconverter(o):
+    if isinstance(o, datetime):
+        return o.__str__()
+
+
+def athena_drop():
+    athena_client = boto3.client('athena')
+    response = athena_client.start_query_execution(
+        QueryString = ('drop table eventbrite_events'),
+        QueryExecutionContext ={'Database':'tickets_db'},
+        ResultConfiguration={'OutputLocation':'s3://aws-athena-results-tickets-db/eventbrite/'}
+    )
+
+
+def athena_create_main(main_columns):
+    querystring = str(('create external table if not exists eventbrite_events'
+                       ' (' + main_columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" \
+                     LOCATION "s3://willjeventdata/eventbrite/main data/" TBLPROPERTIES ("has_encrypted_data"="false")')
+                      )
+    # print(querystring)
+    athena_client = boto3.client('athena')
+    response = athena_client.start_query_execution(
+        QueryString=('create external table if not exists eventbrite_events'
+                     ' (' + main_columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" LOCATION \
+                     "s3://willjeventdata/eventbrite/main data/" TBLPROPERTIES ("has_encrypted_data"="false")'
+                     ),
+        QueryExecutionContext={'Database': 'tickets_db'},
+        ResultConfiguration={'OutputLocation': 's3://aws-athena-results-tickets-db/eventbrite/'}
+    )
+
+
+def athena_create_temp(main_columns):
+    querystring = str(('create external table if not exists eventbrite_tmp'
+                       ' (' + main_columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" \
+                     LOCATION "s3://willjeventdata/eventbrite/temp data/" TBLPROPERTIES ("has_encrypted_data"="false")')
+                      )
+    # print(querystring)
+    athena_client = boto3.client('athena')
+    response = athena_client.start_query_execution(
+        QueryString=('create external table if not exists eventbrite_tmp'
+                     ' (' + main_columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" LOCATION \
+                     "s3://willjeventdata/eventbrite/temp data/" TBLPROPERTIES ("has_encrypted_data"="false")'
+                     ),
+        QueryExecutionContext={'Database': 'tickets_db'},
+        ResultConfiguration={'OutputLocation': 's3://aws-athena-results-tickets-db/eventbrite/'}
+    )
+
+
+def athena_count():
+    athena_client = boto3.client('athena')
+    response = athena_client.start_query_execution(
+        QueryString = ('select count(*) fom eventbrite_events'),
+        QueryExecutionContext ={'Database':'tickets_db'},
+        ResultConfiguration={'OutputLocation':'s3://aws-athena-results-tickets-db/eventbrite/'}
+    )
 
 
 def eventbrite_event_pull():
@@ -93,12 +132,12 @@ def eventbrite_event_pull():
     try:
         bucket = 'willjeventdata'
         key = 'eventbrite_events.pkl'
-        key_json = 'eventbrite/eventbrite_events.pkl'
+        key_json = 'eventbrite/main data/eventbrite_events.json'
         response = s3_client.get_object(Bucket=bucket, Key=key)
         event_dict = (response['Body'].read())
         event_json = json.loads(event_dict.decode('utf8'))
-        master_event_df = pd.DataFrame.from_dict(event_json)
-        print('The S3 JSON list started with ' + str(len(master_event_df)) + ' records')
+        # master_event_df = pd.DataFrame.from_dict(event_json)
+        print('The S3 JSON list started with ' + str(len(event_json)) + ' records')
         temp_df = pd.DataFrame()
 
         for artist_dat in artists_df.iterrows():
@@ -201,17 +240,48 @@ def eventbrite_event_pull():
                 print('Bad Request')
 
         """APPEND LOCAL DF TO MASTER DF PULLED FROM S3"""
-        master_event_df = master_event_df.append(temp_df, sort=True)
-        print('The S3 JSON list now has ' + str(len(master_event_df)) + ' records')
+        # master_event_df = master_event_df.append(temp_df, sort=True)
+        # print('The S3 JSON list now has ' + str(len(master_event_df)) + ' records')
 
-        """S3 UPDATE"""
+        """DICT APPEND METHOD"""
+        """MAKE DICT FROM TEMP DATAFRAME"""
+        temp_dict = temp_df.to_dict('records')
+
+        """MERGE TEMP DICT AND MASTER DICT"""
+        base_dict = event_json
+        new_dict = temp_dict
+        appended_dict = base_dict + new_dict
+        print('The S3 JSON list now has ' + str(len(appended_dict)) + ' records')
+
+        """STAGE APPENDED DICT FOR S3 STORAGE"""
+        appended_dict_stg = json.dumps(appended_dict, default=myconverter)
+        print('appended_dict_stg has been created')
+
+        """S3 FROM NEW DICT"""
         s3_resource = boto3.resource('s3')
-        new_event_json = master_event_df.to_json(orient='records')
-        s3_resource.Object(bucket,key).put(Body=new_event_json)
+        # s3_resource.Object(bucket, key).put(Body=appended_dict_stg)
+        # print('successfully overwrote main PKL file')
 
-        """S3 UPDATE .JSON"""
-        json_reform = new_event_json.replace('[{', '{').replace(']}', '}').replace('},', '}\n')
-        s3_resource.Object(bucket, key_json).put(Body=json_reform)
+        appended_json = appended_dict_stg.replace('[{', '{').replace(']}', '}').replace('},', '}\n')
+        print('appended_json has been created')
+        s3_resource.Object(bucket,key_json).put(Body=appended_json)
+        print('successfully overwrote main JSON file')
+
+        """ATHENA CREATE DROP AND CREATE MAIN TABLE"""
+        columns_string = str(temp_df.columns.values).replace("['", "`").replace(" '", " `").replace("']", '` string').replace("' ", "` string, ").replace("'\n", "` string, ").replace("`date_UTC` string", "`date_UTC` timestamp").replace("`create_ts` string", "`create_ts` timestamp")
+        athena_drop()
+        time.sleep(15)
+        athena_create_main(columns_string)
+
+
+        # """S3 UPDATE"""
+        # s3_resource = boto3.resource('s3')
+        # new_event_json = master_event_df.to_json(orient='records')
+        # s3_resource.Object(bucket,key).put(Body=new_event_json)
+        #
+        # """S3 UPDATE .JSON"""
+        # json_reform = new_event_json.replace('[{', '{').replace(']}', '}').replace('},', '}\n')
+        # s3_resource.Object(bucket, key_json).put(Body=json_reform)
 
     except s3_client.exceptions.NoSuchKey:
 
@@ -219,7 +289,6 @@ def eventbrite_event_pull():
 
 
 eventbrite_event_pull()
-
 
 """PRINT TO LOG FOR MONITORING PURPOSES"""
 current_date = datetime.now()
