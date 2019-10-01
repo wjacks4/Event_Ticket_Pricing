@@ -134,13 +134,16 @@ def seatgeek_events():
         # s3_client = boto3.client('s3')
         bucket = 'willjeventdata'
         key = 'seatgeek_events.pkl'
-        key_json = 'seatgeek/main data/seatgeek_events.json'
+        test_key = 'seatgeek_events_test.pkl'
+        # key_temp = 'seatgeek_event/temp data/seatgeek_temp.pkl'
+        test_key_temp = 'seatgeek_event/temp data/seatgeek_test.pkl'
+        # key_json = 'seatgeek/main data/seatgeek_events.json'
+        test_key_json = 'seatgeek/main data/seatgeek_test.json'
         response = s3_client.get_object(Bucket=bucket, Key=key)
         event_dict = (response['Body'].read())
         event_json = json.loads(event_dict.decode('utf8'))
-        print('event_json has type of ' + str(type(event_json)))
-        master_event_df = pd.DataFrame.from_dict(event_json)
-        print('The S3 JSON list started with ' + str(len(master_event_df)) + ' records')
+        # master_event_df = pd.DataFrame.from_dict(event_json)
+        print('The S3 JSON list started with ' + str(len(event_json)) + ' records')
         temp_df = pd.DataFrame()
 
         """DICT APPEND STAGING"""
@@ -185,7 +188,6 @@ def seatgeek_events():
 
                     try:
                         event_date_utc = xstr(event['datetime_utc']).replace('T', ' ')
-                        print(event_date_utc)
                         event_date_format = datetime.strptime((xstr(event['datetime_utc']).replace('T', ' ')[:10]), '%Y-%m-%d')
                     # print(event_date_utc)
                     except KeyError as noDatetime:
@@ -262,14 +264,6 @@ def seatgeek_events():
                     venue_dict = event['venue']
                     price_dict = event['stats']
 
-                    print(event_name)
-                    print(event_id)
-                    print(event_venue)
-                    print(event_city)
-                    print(event_state)
-                    print(event_date_utc)
-                    print(event_date_format)
-                    print(current_date)
                     event_key = (event_name + str(event_id) + event_venue + event_city + event_state + str(event_date_utc) + str(current_date))
                     # print(event_key)
                     dynamoTable.put_item(
@@ -294,62 +288,44 @@ def seatgeek_events():
 
                     temp_df = temp_df.append(event_array, ignore_index=True, sort=True)
 
-                    print(temp_df)
-
 
             except IndexError as e:
 
                 print('NO RELATED SEATGEEK EVENTS')
 
         """DICT APPEND METHOD"""
+        s3_resource = boto3.resource('s3')
+        
         """MAKE DICT FROM TEMP DATAFRAME"""
         temp_dict = temp_df.to_dict('records')
 
         """MERGE TEMP DICT AND MASTER DICT"""
-        base_dict = event_json
-        new_dict = temp_dict
-        appended_dict = base_dict + new_dict
+        appended_dict = event_json + temp_dict
+        
+        """S3 FROM TEMP DICT"""
+        temp_dict_stg = json.dumps(temp_dict, default = myconverter)
+        # s3_resource.Object(bucket, key_temp).put(Body=temp_dict_stg)
+        s3_resource.Object(bucket, test_key_temp).put(Body=temp_dict_stg)
+        print('successfully stored the ' + str(len(temp_dict)) + ' records of new data')
 
-        """STAGE APPENDED DICT FOR S3 STORAGE"""
+        """S3 PKL FROM APPENDED DICT"""
         appended_dict_stg = json.dumps(appended_dict, default = myconverter)
-        print('the dict is of type ' + str(type(appended_dict_stg)))
+        # s3_resource.Object(bucket, key).put(Body=appended_dict_stg) 
+        s3_resource.Object(bucket, test_key).put(Body=appended_dict_stg)
+        print('successfully overwrote the PKL file which now has ' + str(len(appended_dict_stg)) + ' records')
 
-        """S3 FROM NEW DICT"""
-        s3_resource = boto3.resource('s3')
-        s3_resource.Object(bucket, key).put(Body=appended_dict_stg)
-        print('successfully overwrote main PKL file')
-
+        """S3 JSON FROM APPENDED DICT"""
         appended_json = appended_dict_stg.replace('[{', '{').replace(']}', '}').replace('},', '}\n')
-        s3_resource.Object(bucket,key_json).put(Body=appended_json)
-        print('successfully overwrote main JSON file')
+        # s3_resource.Object(bucket,key_json).put(Body=appended_json)
+        s3_resource.Object(bucket,test_key_json).put(Body=appended_json)
+        print('successfully overwrote main JSON file which now has ' + str(len(appended_dict_stg)) + ' records')
 
-
-        """S3 WORK"""
-        # """S3 OVERWRITE PREVIOUS TEMP FILE"""
-        # s3_resource = boto3.resource('s3')
-        # new_event_json = temp_df.to_json(orient='records')
-        # json_reform = new_event_json.replace('[{', '{').replace(']}', '}').replace('},', '}\n')
-        # s3_resource.Object(bucket, 'seatgeek/temp/seatgeek_temp.json').put(Body=json_reform)
-
-        """ATHENA CREATE TEMP TABLE"""
+        """ATHENA CREATE MAIN TABLE"""
         columns_string = str(temp_df.columns.values).replace("['", "`").replace(" '", " `").replace("']", '` string').replace("' ", "` string, ").replace("'\n", "` string, ").replace("`date_UTC` string", "`date_UTC` timestamp").replace("`create_ts` string", "`create_ts` timestamp")
         print(columns_string)
         athena_drop()
         time.sleep(15)
         athena_create_main(columns_string)
-
-        # """ATHENA APPEND TEMP TO MAIN"""
-        # athena_append()
-
-        # """S3 UPDATE PKL"""
-        # s3_resource = boto3.resource('s3')
-        # new_event_json = master_event_df.to_json(orient='records')
-        # s3_resource.Object(bucket,key).put(Body=new_event_json)
-        # print('successfully overwrote main PKL file')
-        #
-        # """S3 UPDATE .JSON"""
-        # json_reform = new_event_json.replace('[{', '{').replace(']}', '}').replace('},', '}\n')
-        # s3_resource.Object(bucket, key_json).put(Body=json_reform)
 
     except s3_client.exceptions.NoSuchKey:
 
