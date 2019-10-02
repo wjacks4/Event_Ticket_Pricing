@@ -51,7 +51,6 @@ def data_fetch_pymysql():
 
 # data_fetch_pymysql()
 
-
 def myconverter(o):
     if isinstance(o, datetime):
         return o.__str__()
@@ -71,7 +70,7 @@ def athena_create_main(main_columns):
                        ' (' + main_columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" \
                      LOCATION "s3://willjeventdata/stubhub/main data/" TBLPROPERTIES ("has_encrypted_data"="false")')
                       )
-    print(querystring)
+    # print(querystring)
     athena_client = boto3.client('athena')
     response = athena_client.start_query_execution(
         QueryString=('create external table if not exists stubhub_events'
@@ -82,6 +81,22 @@ def athena_create_main(main_columns):
         ResultConfiguration={'OutputLocation': 's3://aws-athena-results-tickets-db/stubhub/'}
     )
 
+
+def athena_create_temp(main_columns):
+    querystring = str(('create external table if not exists stubhub_tmp'
+                       ' (' + main_columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" \
+                     LOCATION "s3://willjeventdata/stubhub/temp data/" TBLPROPERTIES ("has_encrypted_data"="false")')
+                      )
+    # print(querystring)
+    athena_client = boto3.client('athena')
+    response = athena_client.start_query_execution(
+        QueryString=('create external table if not exists stubhub_tmp'
+                     ' (' + main_columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" LOCATION \
+                     "s3://willjeventdata/stubhub/temp data/" TBLPROPERTIES ("has_encrypted_data"="false")'
+                     ),
+        QueryExecutionContext={'Database': 'tickets_db'},
+        ResultConfiguration={'OutputLocation': 's3://aws-athena-results-tickets-db/stubhub/'}
+    )
 
 class keys:
     """
@@ -227,7 +242,6 @@ def pull_caller(inner_func):
         """GET ARTISTS DF FROM MYSQL"""
         artists_df = data_fetch_pymysql().head(250)['artist']
 
-
         """INITIALIZE INCREMENTING VARIABLE"""
         i = 1
 
@@ -292,6 +306,15 @@ def pull_caller(inner_func):
     # s3_resource.Object(bucket,key_json).put(Body=appended_json)
     s3_resource.Object(bucket, key_json).put(Body=appended_json)
     print('successfully overwrote main JSON file which now has ' + str(len(appended_dict)) + ' records')
+
+    """ATHENA CREATE DROP AND CREATE MAIN TABLE"""
+    columns_string = str(temp_df.columns.values).replace("['", "`").replace(" '", " `").replace("']",
+                                                                                                '` string').replace(
+        "' ", "` string, ").replace("'\n", "` string, ").replace("`date_UTC` string", "`date_UTC` timestamp").replace(
+        "`create_ts` string", "`create_ts` timestamp")
+    athena_drop()
+    time.sleep(15)
+    athena_create_main(columns_string)
 
 
 """CALL MAIN FUNCTION"""

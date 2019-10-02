@@ -132,6 +132,7 @@ def eventbrite_event_pull():
     try:
         bucket = 'willjeventdata'
         key = 'eventbrite_events.pkl'
+        key_temp = 'eventbrite/temp data/eventbrite_temp.pkl'
         key_json = 'eventbrite/main data/eventbrite_events.json'
         response = s3_client.get_object(Bucket=bucket, Key=key)
         event_dict = (response['Body'].read())
@@ -244,28 +245,33 @@ def eventbrite_event_pull():
         # print('The S3 JSON list now has ' + str(len(master_event_df)) + ' records')
 
         """DICT APPEND METHOD"""
+        """S3 RESOURCE"""
+        s3_resource = boto3.resource('s3')
+
         """MAKE DICT FROM TEMP DATAFRAME"""
         temp_dict = temp_df.to_dict('records')
 
         """MERGE TEMP DICT AND MASTER DICT"""
-        base_dict = event_json
-        new_dict = temp_dict
-        appended_dict = base_dict + new_dict
+        appended_dict = event_json + temp_dict
         print('The S3 JSON list now has ' + str(len(appended_dict)) + ' records')
 
-        """STAGE APPENDED DICT FOR S3 STORAGE"""
+        """S3 FROM TEMP DICT"""
+        temp_dict_stg = json.dumps(temp_dict, default=myconverter)
+        # s3_resource.Object(bucket, key_temp).put(Body=temp_dict_stg)
+        s3_resource.Object(bucket, key_temp).put(Body=temp_dict_stg)
+        print('successfully stored the ' + str(len(temp_dict)) + ' records of new data')
+
+        """S3 PKL FROM APPENDED DICT"""
         appended_dict_stg = json.dumps(appended_dict, default=myconverter)
-        print('appended_dict_stg has been created')
-
-        """S3 FROM NEW DICT"""
-        s3_resource = boto3.resource('s3')
         # s3_resource.Object(bucket, key).put(Body=appended_dict_stg)
-        # print('successfully overwrote main PKL file')
+        s3_resource.Object(bucket, key).put(Body=appended_dict_stg)
+        print('successfully overwrote the PKL file which now has ' + str(len(appended_dict)) + ' records')
 
+        """S3 JSON FROM APPENDED DICT"""
         appended_json = appended_dict_stg.replace('[{', '{').replace(']}', '}').replace('},', '}\n')
-        print('appended_json has been created')
-        s3_resource.Object(bucket,key_json).put(Body=appended_json)
-        print('successfully overwrote main JSON file')
+        # s3_resource.Object(bucket,key_json).put(Body=appended_json)
+        s3_resource.Object(bucket, key_json).put(Body=appended_json)
+        print('successfully overwrote main JSON file which now has ' + str(len(appended_dict)) + ' records')
 
         """ATHENA CREATE DROP AND CREATE MAIN TABLE"""
         columns_string = str(temp_df.columns.values).replace("['", "`").replace(" '", " `").replace("']", '` string').replace("' ", "` string, ").replace("'\n", "` string, ").replace("`date_UTC` string", "`date_UTC` timestamp").replace("`create_ts` string", "`create_ts` timestamp")
@@ -273,15 +279,6 @@ def eventbrite_event_pull():
         time.sleep(15)
         athena_create_main(columns_string)
 
-
-        # """S3 UPDATE"""
-        # s3_resource = boto3.resource('s3')
-        # new_event_json = master_event_df.to_json(orient='records')
-        # s3_resource.Object(bucket,key).put(Body=new_event_json)
-        #
-        # """S3 UPDATE .JSON"""
-        # json_reform = new_event_json.replace('[{', '{').replace(']}', '}').replace('},', '}\n')
-        # s3_resource.Object(bucket, key_json).put(Body=json_reform)
 
     except s3_client.exceptions.NoSuchKey:
 
