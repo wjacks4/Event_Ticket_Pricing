@@ -41,24 +41,33 @@ def data_fetch_pymysql():
 
 # data_fetch_pymysql()
 
-def athena_drop():
+def athena_drop_main():
     athena_client = boto3.client('athena')
     response = athena_client.start_query_execution(
-        QueryString = ('drop table seatgeek_events'),
+        QueryString = ('drop table if exists seatgeek_events'),
+        QueryExecutionContext ={'Database':'tickets_db'},
+        ResultConfiguration={'OutputLocation':'s3://aws-athena-results-tickets-db/seatgeek/'}
+    )
+
+
+def athena_drop_temp():
+    athena_client = boto3.client('athena')
+    response = athena_client.start_query_execution(
+        QueryString = ('drop table if exists seatgeek_temp'),
         QueryExecutionContext ={'Database':'tickets_db'},
         ResultConfiguration={'OutputLocation':'s3://aws-athena-results-tickets-db/seatgeek/'}
     )
 
 
 def athena_create_temp(main_columns):
-    querystring = str(('create external table if not exists seatgeek_tmp' 
+    querystring = str(('create external table if not exists seatgeek_temp' 
                      ' (' + main_columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" \
                      LOCATION "s3://willjeventdata/seatgeek/temp data/" TBLPROPERTIES ("has_encrypted_data"="false")')
                       )
     # print(querystring)
     athena_client = boto3.client('athena')
     response = athena_client.start_query_execution(
-        QueryString=('create external table if not exists seatgeek_tmp'
+        QueryString=('create external table if not exists seatgeek_temp'
                      ' (' + main_columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" LOCATION \
                      "s3://willjeventdata/seatgeek/temp data/" TBLPROPERTIES ("has_encrypted_data"="false")'
                      ),
@@ -73,22 +82,6 @@ def athena_create_main(main_columns):
                      LOCATION "s3://willjeventdata/seatgeek/main data/" TBLPROPERTIES ("has_encrypted_data"="false")')
                       )
     # print(querystring)
-    athena_client = boto3.client('athena')
-    response = athena_client.start_query_execution(
-        QueryString=('create external table if not exists seatgeek_events'
-                     ' (' + main_columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" LOCATION \
-                     "s3://willjeventdata/seatgeek/main data/" TBLPROPERTIES ("has_encrypted_data"="false")'
-                     ),
-        QueryExecutionContext={'Database': 'tickets_db'},
-        ResultConfiguration={'OutputLocation': 's3://aws-athena-results-tickets-db/seatgeek/'}
-    )
-
-def athena_create_improved(main_columns):
-    querystring = str(('create external table if not exists seatgeek_events'
-                       ' (' + main_columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" \
-                     LOCATION "s3://willjeventdata/seatgeek/main data/" TBLPROPERTIES ("has_encrypted_data"="false")')
-                      )
-    print(querystring)
     athena_client = boto3.client('athena')
     response = athena_client.start_query_execution(
         QueryString=('create external table if not exists seatgeek_events'
@@ -137,11 +130,8 @@ def seatgeek_events():
         # s3_client = boto3.client('s3')
         bucket = 'willjeventdata'
         key = 'seatgeek_events.pkl'
-        # test_key = 'seatgeek_events_test.pkl'
-        key_temp = 'seatgeek_event/temp data/seatgeek_temp.pkl'
-        # test_key_temp = 'seatgeek_event/temp data/seatgeek_test.pkl'
+        key_temp = 'seatgeek/temp data/seatgeek_temp.json'
         key_json = 'seatgeek/main data/seatgeek_events.json'
-        # test_key_json = 'seatgeek/main data/seatgeek_test.json'
         response = s3_client.get_object(Bucket=bucket, Key=key)
         event_dict = (response['Body'].read())
         event_json = json.loads(event_dict.decode('utf8'))
@@ -305,10 +295,10 @@ def seatgeek_events():
         appended_dict = event_json + temp_dict
         
         """S3 FROM TEMP DICT"""
-        temp_dict_stg = json.dumps(temp_dict, default = myconverter)
+        temp_dict_stg = json.dumps(temp_dict, default=myconverter)
+        temp_dict_json = temp_dict_stg.replace('[{', '{').replace(']}', '}').replace('},', '}\n')
         # s3_resource.Object(bucket, key_temp).put(Body=temp_dict_stg)
-        s3_resource.Object(bucket, key_temp).put(Body=temp_dict_stg)
-        print('successfully stored the ' + str(len(temp_dict)) + ' records of new data')
+        s3_resource.Object(bucket, key_temp).put(Body=temp_dict_json)
 
         """S3 PKL FROM APPENDED DICT"""
         appended_dict_stg = json.dumps(appended_dict, default = myconverter)
@@ -326,9 +316,19 @@ def seatgeek_events():
         columns_string = str(temp_df.columns.values).replace("['", "`").replace(" '", " `")\
             .replace("']", '` string').replace("' ", "` string, ").replace("'\n", "` string, ")\
             .replace("`date_UTC` string", "`date_UTC` timestamp").replace("`create_ts` string", "`create_ts` timestamp")
-        athena_drop()
-        time.sleep(15)
+        athena_drop_main()
+        time.sleep(10)
         athena_create_main(columns_string)
+
+        """ATHENA DROP AND CREATE TEMP TABLE"""
+        columns_string = str(temp_df.columns.values).replace("['", "`").replace(" '", " `").replace("']",
+                                                                                                    '` string').replace(
+            "' ", "` string, ").replace("'\n", "` string, ").replace("`date_UTC` string",
+                                                                     "`date_UTC` timestamp").replace(
+            "`create_ts` string", "`create_ts` timestamp")
+        athena_drop_temp()
+        time.sleep(10)
+        athena_create_temp(columns_string)
 
     except s3_client.exceptions.NoSuchKey:
 

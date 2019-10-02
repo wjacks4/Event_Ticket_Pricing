@@ -56,10 +56,19 @@ def myconverter(o):
         return o.__str__()
 
 
-def athena_drop():
+def athena_drop_main():
     athena_client = boto3.client('athena')
     response = athena_client.start_query_execution(
-        QueryString = ('drop table stubhub_events'),
+        QueryString = ('drop table if exists stubhub_events'),
+        QueryExecutionContext ={'Database':'tickets_db'},
+        ResultConfiguration={'OutputLocation':'s3://aws-athena-results-tickets-db/stubhub/'}
+    )
+
+
+def athena_drop_temp():
+    athena_client = boto3.client('athena')
+    response = athena_client.start_query_execution(
+        QueryString = ('drop table if exists stubhub_temp'),
         QueryExecutionContext ={'Database':'tickets_db'},
         ResultConfiguration={'OutputLocation':'s3://aws-athena-results-tickets-db/stubhub/'}
     )
@@ -83,14 +92,14 @@ def athena_create_main(main_columns):
 
 
 def athena_create_temp(main_columns):
-    querystring = str(('create external table if not exists stubhub_tmp'
+    querystring = str(('create external table if not exists stubhub_temp'
                        ' (' + main_columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" \
                      LOCATION "s3://willjeventdata/stubhub/temp data/" TBLPROPERTIES ("has_encrypted_data"="false")')
                       )
     # print(querystring)
     athena_client = boto3.client('athena')
     response = athena_client.start_query_execution(
-        QueryString=('create external table if not exists stubhub_tmp'
+        QueryString=('create external table if not exists stubhub_temp'
                      ' (' + main_columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" LOCATION \
                      "s3://willjeventdata/stubhub/temp data/" TBLPROPERTIES ("has_encrypted_data"="false")'
                      ),
@@ -229,7 +238,7 @@ def pull_caller(inner_func):
         s3_client = boto3.client('s3')
         bucket = 'willjeventdata'
         key = 'stubhub_events.pkl'
-        key_temp = 'stubhub/temp data/stubhub_temp.pkl'
+        key_temp = 'stubhub/temp data/stubhub_temp.json'
         key_json = 'stubhub/main data/stubhub_events.json'
         response = s3_client.get_object(Bucket=bucket, Key=key)
         event_dict = (response['Body'].read())
@@ -291,9 +300,9 @@ def pull_caller(inner_func):
 
     """S3 FROM TEMP DICT"""
     temp_dict_stg = json.dumps(temp_dict, default=myconverter)
+    temp_dict_json = temp_dict_stg.replace('[{', '{').replace(']}', '}').replace('},', '}\n')
     # s3_resource.Object(bucket, key_temp).put(Body=temp_dict_stg)
-    s3_resource.Object(bucket, key_temp).put(Body=temp_dict_stg)
-    print('successfully stored the ' + str(len(temp_dict)) + ' records of new data')
+    s3_resource.Object(bucket, key_temp).put(Body=temp_dict_json)
 
     """S3 PKL FROM APPENDED DICT"""
     appended_dict_stg = json.dumps(appended_dict, default=myconverter)
@@ -307,14 +316,23 @@ def pull_caller(inner_func):
     s3_resource.Object(bucket, key_json).put(Body=appended_json)
     print('successfully overwrote main JSON file which now has ' + str(len(appended_dict)) + ' records')
 
-    """ATHENA CREATE DROP AND CREATE MAIN TABLE"""
+    """ATHENA DROP AND CREATE MAIN TABLE"""
     columns_string = str(temp_df.columns.values).replace("['", "`").replace(" '", " `").replace("']",
                                                                                                 '` string').replace(
         "' ", "` string, ").replace("'\n", "` string, ").replace("`date_UTC` string", "`date_UTC` timestamp").replace(
         "`create_ts` string", "`create_ts` timestamp")
-    athena_drop()
-    time.sleep(15)
+    athena_drop_main()
+    time.sleep(10)
     athena_create_main(columns_string)
+
+    """ATHENA DROP AND CREATE TEMP TABLE"""
+    columns_string = str(temp_df.columns.values).replace("['", "`").replace(" '", " `").replace("']",
+                                                                                                '` string').replace(
+        "' ", "` string, ").replace("'\n", "` string, ").replace("`date_UTC` string", "`date_UTC` timestamp").replace(
+        "`create_ts` string", "`create_ts` timestamp")
+    athena_drop_temp()
+    time.sleep(10)
+    athena_create_temp(columns_string)
 
 
 """CALL MAIN FUNCTION"""

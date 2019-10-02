@@ -69,7 +69,7 @@ def myconverter(o):
         return o.__str__()
 
 
-def athena_drop():
+def athena_drop_main():
     athena_client = boto3.client('athena')
     response = athena_client.start_query_execution(
         QueryString = ('drop table ticketmaster_events'),
@@ -78,15 +78,24 @@ def athena_drop():
     )
 
 
+def athena_drop_temp():
+    athena_client = boto3.client('athena')
+    response = athena_client.start_query_execution(
+        QueryString = ('drop table if exists ticketmaster_temp'),
+        QueryExecutionContext ={'Database':'tickets_db'},
+        ResultConfiguration={'OutputLocation':'s3://aws-athena-results-tickets-db/ticketmaster/'}
+    )
+
+
 def athena_create_temp(main_columns):
-    querystring = str(('create external table if not exists ticketmaster_tmp'
+    querystring = str(('create external table if not exists ticketmaster_temp'
                        ' (' + main_columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" \
                      LOCATION "s3://willjeventdata/ticketmaster/temp data/" TBLPROPERTIES ("has_encrypted_data"="false")')
                       )
     # print(querystring)
     athena_client = boto3.client('athena')
     response = athena_client.start_query_execution(
-        QueryString=('create external table if not exists ticketmaster_events'
+        QueryString=('create external table if not exists ticketmaster_temp'
                      ' (' + main_columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" LOCATION \
                      "s3://willjeventdata/ticketmaster/temp data/" TBLPROPERTIES ("has_encrypted_data"="false")'
                      ),
@@ -151,7 +160,7 @@ def ticketmaster_event_pull():
     try:
         bucket = 'willjeventdata'
         key = 'ticketmaster_events.pkl'
-        key_temp = 'ticketmaster/temp data/ticketmaster_events.pkl'
+        key_temp = 'ticketmaster/temp data/ticketmaster_events.json'
         key_json = 'ticketmaster/main data/ticketmaster_events.json'
         response = s3_client.get_object(Bucket=bucket, Key=key)
         event_dict = (response['Body'].read())
@@ -452,8 +461,9 @@ def ticketmaster_event_pull():
 
         """S3 FROM TEMP DICT"""
         temp_dict_stg = json.dumps(temp_dict, default=myconverter)
+        temp_dict_json = temp_dict_stg.replace('[{', '{').replace(']}', '}').replace('},', '}\n')
         # s3_resource.Object(bucket, key_temp).put(Body=temp_dict_stg)
-        s3_resource.Object(bucket, key_temp).put(Body=temp_dict_stg)
+        s3_resource.Object(bucket, key_temp).put(Body=temp_dict_json)
         print('successfully stored the ' + str(len(temp_dict)) + ' records of new data')
 
         """S3 PKL FROM APPENDED DICT"""
@@ -470,9 +480,20 @@ def ticketmaster_event_pull():
 
         """ATHENA CREATE DROP AND CREATE MAIN TABLE"""
         columns_string = str(temp_df.columns.values).replace("['", "`").replace(" '", " `").replace("']", '` string').replace("' ", "` string, ").replace("'\n", "` string, ").replace("`date_UTC` string", "`date_UTC` timestamp").replace("`create_ts` string", "`create_ts` timestamp")
-        athena_drop()
-        time.sleep(15)
+        athena_drop_main()
+        time.sleep(10)
         athena_create_main(columns_string)
+
+
+        """ATHENA DROP AND CREATE TEMP TABLE"""
+        columns_string = str(temp_df.columns.values).replace("['", "`").replace(" '", " `").replace("']",
+                                                                                                    '` string').replace(
+            "' ", "` string, ").replace("'\n", "` string, ").replace("`date_UTC` string",
+                                                                     "`date_UTC` timestamp").replace(
+            "`create_ts` string", "`create_ts` timestamp")
+        athena_drop_temp()
+        time.sleep(10)
+        athena_create_temp(columns_string)
 
     except s3_client.exceptions.NoSuchKey:
         print('THE S3 BUCKET SOMEHOW GOT DELETED...')
