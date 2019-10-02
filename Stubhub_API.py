@@ -60,11 +60,10 @@ def myconverter(o):
 def athena_drop():
     athena_client = boto3.client('athena')
     response = athena_client.start_query_execution(
-    QueryString = ('drop table stubhub_events'),
-    QueryExecutionContext ={'Database':'tickets_db'},
-    ResultConfiguration={'OutputLocation':'s3://aws-athena-results-tickets-db/stubhub/'}
+        QueryString = ('drop table stubhub_events'),
+        QueryExecutionContext ={'Database':'tickets_db'},
+        ResultConfiguration={'OutputLocation':'s3://aws-athena-results-tickets-db/stubhub/'}
     )
-
 
 
 def athena_create_main(main_columns):
@@ -267,8 +266,8 @@ def pull_caller(inner_func):
         
     """DICT APPEND METHOD"""
     """S3 RESOURCE"""
-
     s3_resource = boto3.resource('s3')
+
     """MAKE DICT FROM TEMP DATAFRAME"""
     temp_dict = temp_df.to_dict('records')
 

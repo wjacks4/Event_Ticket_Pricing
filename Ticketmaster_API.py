@@ -68,12 +68,30 @@ def myconverter(o):
     if isinstance(o, datetime):
         return o.__str__()
 
+
 def athena_drop():
     athena_client = boto3.client('athena')
     response = athena_client.start_query_execution(
         QueryString = ('drop table ticketmaster_events'),
         QueryExecutionContext ={'Database':'tickets_db'},
         ResultConfiguration={'OutputLocation':'s3://aws-athena-results-tickets-db/ticketmaster/'}
+    )
+
+
+def athena_create_temp(main_columns):
+    querystring = str(('create external table if not exists ticketmaster_tmp'
+                       ' (' + main_columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" \
+                     LOCATION "s3://willjeventdata/ticketmaster/temp data/" TBLPROPERTIES ("has_encrypted_data"="false")')
+                      )
+    # print(querystring)
+    athena_client = boto3.client('athena')
+    response = athena_client.start_query_execution(
+        QueryString=('create external table if not exists ticketmaster_events'
+                     ' (' + main_columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" LOCATION \
+                     "s3://willjeventdata/ticketmaster/temp data/" TBLPROPERTIES ("has_encrypted_data"="false")'
+                     ),
+        QueryExecutionContext={'Database': 'tickets_db'},
+        ResultConfiguration={'OutputLocation': 's3://aws-athena-results-tickets-db/ticketmaster/'}
     )
 
 
@@ -92,20 +110,6 @@ def athena_create_main(main_columns):
         QueryExecutionContext={'Database': 'tickets_db'},
         ResultConfiguration={'OutputLocation': 's3://aws-athena-results-tickets-db/ticketmaster/'}
     )
-
-
-def athena_append():
-    athena_client = boto3.client('athena')
-    response = athena_client.start_query_execution(
-        QueryString = ('CREATE TABLE test as \
-        SELECT * FROM tickets_db.ticketmaster_stg \
-        UNION ALL SELECT * FROM tickets_db.ticketmaster_events;' ),
-        QueryExecutionContext={'Database':'tickets_db'},
-        ResultConfiguration={'OutputLocation': 's3://aws-athena-results-tickets-db/ticketmaster/'}
-    )
-
-
-
 
 
 def ticketmaster_event_pull():
@@ -129,7 +133,7 @@ def ticketmaster_event_pull():
 
     """
     """GET ARTISTS DATAFRAME"""
-    artists_df = data_fetch_pymysql().head(250)
+    artists_df = data_fetch_pymysql().head(5)
 
     """CURRENT DATE ASSIGNMENT"""
     current_date = datetime.now()
@@ -147,7 +151,8 @@ def ticketmaster_event_pull():
     try:
         bucket = 'willjeventdata'
         key = 'ticketmaster_events.pkl'
-        key_json = 'ticketmaster/ticketmaster_events.json'
+        key_temp = 'ticketmaster/temp data/ticketmaster_events.pkl'
+        key_json = 'ticketmaster/main data/ticketmaster_events.json'
         response = s3_client.get_object(Bucket=bucket, Key=key)
         event_dict = (response['Body'].read())
         event_json = json.loads(event_dict.decode('utf8'))
@@ -435,35 +440,33 @@ def ticketmaster_event_pull():
         # master_event_df = master_event_df.append(temp_df, sort=True)
 
         """DICT APPEND METHOD"""
+        """S3 RESOURCE"""
+        s3_resource = boto3.resource('s3')
+
         """MAKE DICT FROM TEMP DATAFRAME"""
         temp_dict = temp_df.to_dict('records')
 
         """MERGE TEMP DICT AND MASTER DICT"""
-        base_dict = event_json
-        new_dict = temp_dict
-        appended_dict = base_dict + new_dict
+        appended_dict = event_json + temp_dict
         print('The S3 JSON list now has ' + str(len(appended_dict)) + ' records')
 
-        """STAGE APPENDED DICT FOR S3 STORAGE"""
-        appended_dict_stg = json.dumps(appended_dict, default = myconverter)
+        """S3 FROM TEMP DICT"""
+        temp_dict_stg = json.dumps(temp_dict, default=myconverter)
+        # s3_resource.Object(bucket, key_temp).put(Body=temp_dict_stg)
+        s3_resource.Object(bucket, key_temp).put(Body=temp_dict_stg)
+        print('successfully stored the ' + str(len(temp_dict)) + ' records of new data')
 
-        """S3 FROM NEW DICT"""
-        s3_resource = boto3.resource('s3')
+        """S3 PKL FROM APPENDED DICT"""
+        appended_dict_stg = json.dumps(appended_dict, default=myconverter)
+        # s3_resource.Object(bucket, key).put(Body=appended_dict_stg)
         s3_resource.Object(bucket, key).put(Body=appended_dict_stg)
-        print('successfully overwrote main PKL file')
+        print('successfully overwrote the PKL file which now has ' + str(len(appended_dict)) + ' records')
 
+        """S3 JSON FROM APPENDED DICT"""
         appended_json = appended_dict_stg.replace('[{', '{').replace(']}', '}').replace('},', '}\n')
-        s3_resource.Object(bucket,key_json).put(Body=appended_json)
-        print('successfully overwrote main JSON file')
-
-        # """S3 UPDATE"""
-        # s3_resource = boto3.resource('s3')
-        # new_event_json = master_event_df.to_json(orient='records')
-        # s3_resource.Object(bucket,key).put(Body=new_event_json)
-        #
-        # """S3 UPDATE .JSON"""
-        # json_reform = new_event_json.replace('[{', '{').replace(']}', '}').replace('},', '}\n')
-        # s3_resource.Object(bucket, key_json).put(Body=json_reform)
+        # s3_resource.Object(bucket,key_json).put(Body=appended_json)
+        s3_resource.Object(bucket, key_json).put(Body=appended_json)
+        print('successfully overwrote main JSON file which now has ' + str(len(appended_dict)) + ' records')
 
         """ATHENA CREATE DROP AND CREATE MAIN TABLE"""
         columns_string = str(temp_df.columns.values).replace("['", "`").replace(" '", " `").replace("']", '` string').replace("' ", "` string, ").replace("'\n", "` string, ").replace("`date_UTC` string", "`date_UTC` timestamp").replace("`create_ts` string", "`create_ts` timestamp")
