@@ -2,37 +2,8 @@
 START DOING....ANALYSIS???
 """
 
-import json
-from dateutil import parser
-import time
-import os
-import subprocess
-import urllib
-import urllib.request
 import pandas as pd
-import unidecode
-from unidecode import unidecode
-import requests
-import urllib
-from urllib import parse
-import sys
-import base64
-import numpy as np
-import re
-import pymysql
-# import MySQLdb
-import base64
-import datetime
-from datetime import datetime
-from collections import defaultdict
-import pickle
-import pprint
-from pprint import pprint
-import urllib
-import pandas as pd
-import numpy as np
 import json
-import requests
 import boto3
 
 """IMPORT PICKLE FROM S3, SAVE AS LARGE JSON OBJ"""
@@ -64,7 +35,6 @@ class event_df:
         self.master_event_df = pd.DataFrame.from_dict(event_json)
 
 
-<<<<<<< HEAD
 # tm_df = event_df('willjeventdata', 'ticketmaster_events.pkl')
 # print(tm_df.master_event_df.head(10))
 # sg_df = event_df('willjeventdata', 'seatgeek_events.pkl')
@@ -73,21 +43,17 @@ class event_df:
 # print(sh_df.master_event_df.head(10))
 # eb_df = event_df('willjeventdata', 'eventbrite_events.pkl')
 # print(eb_df.master_event_df.head(10))
-=======
+
 tm_df = event_df('willjeventdata', 'ticketmaster_events.pkl')
 sg_df = event_df('willjeventdata', 'seatgeek_events.pkl')
 sh_df = event_df('willjeventdata', 'stubhub_events.pkl')
 eb_df = event_df('willjeventdata', 'eventbrite_events.pkl')
-
->>>>>>> 3594cbbd0de0286d94c087a334319efd9d69d230
-
 
 # print(tm_df.master_event_df.columns)
 print(sg_df.master_event_df.columns.values)
 columns_string = str(sg_df.master_event_df.columns.values).replace("['", "`").replace(" '", " `").replace("']", '` string').replace("' ", "` string, ").replace("'\n", "` string, ")
 print(columns_string)
 
-<<<<<<< HEAD
 
 # print(sh_df.master_event_df.columns)
 # print(eb_df.master_event_df.columns)
@@ -104,7 +70,6 @@ print(columns_string)
 #print(test_append.columns)
 
 #test_tm.columns=['artist', 'artist_id', 'name', 'city', 'create_ts', 'date_UTC', 'highest_price', 'event_id', 'lowest_price', 'highest_price']
-=======
 # test_tm = tm_df.master_event_df.head(10)
 # test_sg = sg_df.master_event_df.head(10)
 # test_sh = sh_df.master_event_df.head(10)
@@ -114,7 +79,6 @@ print(columns_string)
 # print(test_append.columns)
 #
 # test_tm.columns=['artist', 'artist_id', 'name', 'city', 'create_ts', 'date_UTC', 'highest_price', 'event_id', 'lowest_price', 'highest_price']
->>>>>>> 3594cbbd0de0286d94c087a334319efd9d69d230
 
 
 

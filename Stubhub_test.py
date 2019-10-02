@@ -217,8 +217,8 @@ def pull_caller(inner_func):
         s3_client = boto3.client('s3')
         bucket = 'willjeventdata'
         key = 'stubhub_events.pkl'
+        key_temp = 'stubhub/temp data/stubhub_temp.pkl'
         key_json = 'stubhub/main data/stubhub_events.json'
-        test_json_loc = 'stubhub/main data/stubhub_events_test.json'
         response = s3_client.get_object(Bucket=bucket, Key=key)
         event_dict = (response['Body'].read())
         event_json = json.loads(event_dict.decode('utf8'))
@@ -268,30 +268,36 @@ def pull_caller(inner_func):
         
         
     """DICT APPEND METHOD"""
+    """S3 RESOURCE"""
+
+    s3_resource = boto3.resource('s3')
     """MAKE DICT FROM TEMP DATAFRAME"""
     temp_dict = temp_df.to_dict('records')
 
     """MERGE TEMP DICT AND MASTER DICT"""
-    base_dict = event_json
-    new_dict = temp_dict
-    appended_dict = base_dict + new_dict
+    appended_dict = event_json + temp_dict
     print('The S3 JSON list now has ' + str(len(appended_dict)) + ' records')
 
-    """STAGE APPENDED DICT FOR S3 STORAGE"""
-    appended_dict_stg = json.dumps(appended_dict, default = myconverter)
-    print('the dict is of type ' + str(type(appended_dict_stg)))
-    
-    
-    """S3 FROM NEW DICT"""
-    s3_resource = boto3.resource('s3')
+    """S3 FROM TEMP DICT"""
+    temp_dict_stg = json.dumps(temp_dict, default=myconverter)
+    # s3_resource.Object(bucket, key_temp).put(Body=temp_dict_stg)
+    s3_resource.Object(bucket, key_temp).put(Body=temp_dict_stg)
+    print('successfully stored the ' + str(len(temp_dict)) + ' records of new data')
+
+    """S3 PKL FROM APPENDED DICT"""
+    appended_dict_stg = json.dumps(appended_dict, default=myconverter)
+    # s3_resource.Object(bucket, key).put(Body=appended_dict_stg)
     s3_resource.Object(bucket, key).put(Body=appended_dict_stg)
-    print('successfully overwrote main PKL file')
+    print('successfully overwrote the PKL file which now has ' + str(len(appended_dict_stg)) + ' records')
 
+    """S3 JSON FROM APPENDED DICT"""
     appended_json = appended_dict_stg.replace('[{', '{').replace(']}', '}').replace('},', '}\n')
-    s3_resource.Object(bucket,test_json_loc).put(Body=appended_json)
-    print('successfully overwrote main JSON file')
+    # s3_resource.Object(bucket,key_json).put(Body=appended_json)
+    s3_resource.Object(bucket, key_json).put(Body=appended_json)
+    print('successfully overwrote main JSON file which now has ' + str(len(appended_dict_stg)) + ' records')
 
 
+"""CALL MAIN FUNCTION"""
 pull_caller(stubhub_event_pull)
 
 

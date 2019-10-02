@@ -83,6 +83,22 @@ def athena_create_main(main_columns):
         ResultConfiguration={'OutputLocation': 's3://aws-athena-results-tickets-db/seatgeek/'}
     )
 
+def athena_create_improved(main_columns):
+    querystring = str(('create external table if not exists seatgeek_events'
+                       ' (' + main_columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" \
+                     LOCATION "s3://willjeventdata/seatgeek/main data/" TBLPROPERTIES ("has_encrypted_data"="false")')
+                      )
+    print(querystring)
+    athena_client = boto3.client('athena')
+    response = athena_client.start_query_execution(
+        QueryString=('create external table if not exists seatgeek_events'
+                     ' (' + main_columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" LOCATION \
+                     "s3://willjeventdata/seatgeek/main data/" TBLPROPERTIES ("has_encrypted_data"="false")'
+                     ),
+        QueryExecutionContext={'Database': 'tickets_db'},
+        ResultConfiguration={'OutputLocation': 's3://aws-athena-results-tickets-db/seatgeek/'}
+    )
+
 
 def seatgeek_events():
 
@@ -307,7 +323,9 @@ def seatgeek_events():
         print('successfully overwrote main JSON file which now has ' + str(len(appended_dict_stg)) + ' records')
 
         """ATHENA CREATE MAIN TABLE"""
-        columns_string = str(temp_df.columns.values).replace("['", "`").replace(" '", " `").replace("']", '` string').replace("' ", "` string, ").replace("'\n", "` string, ").replace("`date_UTC` string", "`date_UTC` timestamp").replace("`create_ts` string", "`create_ts` timestamp")
+        columns_string = str(temp_df.columns.values).replace("['", "`").replace(" '", " `")\
+            .replace("']", '` string').replace("' ", "` string, ").replace("'\n", "` string, ")\
+            .replace("`date_UTC` string", "`date_UTC` timestamp").replace("`create_ts` string", "`create_ts` timestamp")
         print(columns_string)
         athena_drop()
         time.sleep(15)
