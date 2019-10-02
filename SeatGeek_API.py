@@ -137,11 +137,11 @@ def seatgeek_events():
         # s3_client = boto3.client('s3')
         bucket = 'willjeventdata'
         key = 'seatgeek_events.pkl'
-        test_key = 'seatgeek_events_test.pkl'
-        # key_temp = 'seatgeek_event/temp data/seatgeek_temp.pkl'
-        test_key_temp = 'seatgeek_event/temp data/seatgeek_test.pkl'
-        # key_json = 'seatgeek/main data/seatgeek_events.json'
-        test_key_json = 'seatgeek/main data/seatgeek_test.json'
+        # test_key = 'seatgeek_events_test.pkl'
+        key_temp = 'seatgeek_event/temp data/seatgeek_temp.pkl'
+        # test_key_temp = 'seatgeek_event/temp data/seatgeek_test.pkl'
+        key_json = 'seatgeek/main data/seatgeek_events.json'
+        # test_key_json = 'seatgeek/main data/seatgeek_test.json'
         response = s3_client.get_object(Bucket=bucket, Key=key)
         event_dict = (response['Body'].read())
         event_json = json.loads(event_dict.decode('utf8'))
@@ -307,19 +307,19 @@ def seatgeek_events():
         """S3 FROM TEMP DICT"""
         temp_dict_stg = json.dumps(temp_dict, default = myconverter)
         # s3_resource.Object(bucket, key_temp).put(Body=temp_dict_stg)
-        s3_resource.Object(bucket, test_key_temp).put(Body=temp_dict)
+        s3_resource.Object(bucket, key_temp).put(Body=temp_dict_stg)
         print('successfully stored the ' + str(len(temp_dict)) + ' records of new data')
 
         """S3 PKL FROM APPENDED DICT"""
         appended_dict_stg = json.dumps(appended_dict, default = myconverter)
         # s3_resource.Object(bucket, key).put(Body=appended_dict_stg) 
-        s3_resource.Object(bucket, test_key).put(Body=appended_dict_stg)
+        s3_resource.Object(bucket, key).put(Body=appended_dict_stg)
         print('successfully overwrote the PKL file which now has ' + str(len(appended_dict)) + ' records')
 
         """S3 JSON FROM APPENDED DICT"""
         appended_json = appended_dict_stg.replace('[{', '{').replace(']}', '}').replace('},', '}\n')
         # s3_resource.Object(bucket,key_json).put(Body=appended_json)
-        s3_resource.Object(bucket,test_key_json).put(Body=appended_json)
+        s3_resource.Object(bucket, key_json).put(Body=appended_json)
         print('successfully overwrote main JSON file which now has ' + str(len(appended_dict)) + ' records')
 
         """ATHENA CREATE MAIN TABLE"""
