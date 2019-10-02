@@ -55,7 +55,7 @@ def athena_create_temp(main_columns):
                      ' (' + main_columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" \
                      LOCATION "s3://willjeventdata/seatgeek/temp data/" TBLPROPERTIES ("has_encrypted_data"="false")')
                       )
-    print(querystring)
+    # print(querystring)
     athena_client = boto3.client('athena')
     response = athena_client.start_query_execution(
         QueryString=('create external table if not exists seatgeek_tmp'
@@ -72,7 +72,7 @@ def athena_create_main(main_columns):
                        ' (' + main_columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" \
                      LOCATION "s3://willjeventdata/seatgeek/main data/" TBLPROPERTIES ("has_encrypted_data"="false")')
                       )
-    print(querystring)
+    # print(querystring)
     athena_client = boto3.client('athena')
     response = athena_client.start_query_execution(
         QueryString=('create external table if not exists seatgeek_events'
@@ -122,7 +122,7 @@ def seatgeek_events():
     """
 
     """GET ARTISTS DATAFRAME"""
-    artists_df = data_fetch_pymysql().head(3)['artist']
+    artists_df = data_fetch_pymysql().head(5)['artist']
 
     """CURRENT DATE ASSIGNMENT"""
     current_date = datetime.now()
@@ -307,26 +307,25 @@ def seatgeek_events():
         """S3 FROM TEMP DICT"""
         temp_dict_stg = json.dumps(temp_dict, default = myconverter)
         # s3_resource.Object(bucket, key_temp).put(Body=temp_dict_stg)
-        s3_resource.Object(bucket, test_key_temp).put(Body=temp_dict_stg)
+        s3_resource.Object(bucket, test_key_temp).put(Body=temp_dict)
         print('successfully stored the ' + str(len(temp_dict)) + ' records of new data')
 
         """S3 PKL FROM APPENDED DICT"""
         appended_dict_stg = json.dumps(appended_dict, default = myconverter)
         # s3_resource.Object(bucket, key).put(Body=appended_dict_stg) 
         s3_resource.Object(bucket, test_key).put(Body=appended_dict_stg)
-        print('successfully overwrote the PKL file which now has ' + str(len(appended_dict_stg)) + ' records')
+        print('successfully overwrote the PKL file which now has ' + str(len(appended_dict)) + ' records')
 
         """S3 JSON FROM APPENDED DICT"""
         appended_json = appended_dict_stg.replace('[{', '{').replace(']}', '}').replace('},', '}\n')
         # s3_resource.Object(bucket,key_json).put(Body=appended_json)
         s3_resource.Object(bucket,test_key_json).put(Body=appended_json)
-        print('successfully overwrote main JSON file which now has ' + str(len(appended_dict_stg)) + ' records')
+        print('successfully overwrote main JSON file which now has ' + str(len(appended_dict)) + ' records')
 
         """ATHENA CREATE MAIN TABLE"""
         columns_string = str(temp_df.columns.values).replace("['", "`").replace(" '", " `")\
             .replace("']", '` string').replace("' ", "` string, ").replace("'\n", "` string, ")\
             .replace("`date_UTC` string", "`date_UTC` timestamp").replace("`create_ts` string", "`create_ts` timestamp")
-        print(columns_string)
         athena_drop()
         time.sleep(15)
         athena_create_main(columns_string)

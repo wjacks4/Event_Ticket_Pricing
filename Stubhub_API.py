@@ -26,6 +26,7 @@ import pymysql
 # import MySQLdb
 import base64
 import datetime
+import boto3
 from datetime import datetime
 
 import boto3
@@ -49,6 +50,38 @@ def data_fetch_pymysql():
 
 
 # data_fetch_pymysql()
+
+
+def myconverter(o):
+    if isinstance(o, datetime):
+        return o.__str__()
+
+
+def athena_drop():
+    athena_client = boto3.client('athena')
+    response = athena_client.start_query_execution(
+    QueryString = ('drop table stubhub_events'),
+    QueryExecutionContext ={'Database':'tickets_db'},
+    ResultConfiguration={'OutputLocation':'s3://aws-athena-results-tickets-db/stubhub/'}
+    )
+
+
+
+def athena_create_main(main_columns):
+    querystring = str(('create external table if not exists stubhub_events'
+                       ' (' + main_columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" \
+                     LOCATION "s3://willjeventdata/stubhub/main data/" TBLPROPERTIES ("has_encrypted_data"="false")')
+                      )
+    print(querystring)
+    athena_client = boto3.client('athena')
+    response = athena_client.start_query_execution(
+        QueryString=('create external table if not exists stubhub_events'
+                     ' (' + main_columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" LOCATION \
+                     "s3://willjeventdata/stubhub/main data/" TBLPROPERTIES ("has_encrypted_data"="false")'
+                     ),
+        QueryExecutionContext={'Database': 'tickets_db'},
+        ResultConfiguration={'OutputLocation': 's3://aws-athena-results-tickets-db/stubhub/'}
+    )
 
 
 class keys:
@@ -86,26 +119,89 @@ token4 = keys(b'Q53rXMFZn9FfQuxNJhYJAPhbxFTDpH59', b'pQSLJvFEuk2AoHqG', 'buttere
 token5 = keys(b'uyoddTC6PL6ZIGaMkirj64bFRvLbMoDY', b'Ok4sujJFfhvYIT7W', 'sunglassman3123@gmail.com', 'Hester3123')
 
 
-def stubhub_event_pull():
-    """
-        MAIN API FUNCTION
 
-        Get top 250 artists from the SQL table with relevant artists (they actually have upcoming events on stubhub)
 
-        Pull pickled JSON file from S3, turn into Pandas DF
+def stubhub_event_pull(temp_df, artist_in, artist_url, cursor_in, connection_in, dynamotable_in, token_in):
+    
+    try:
+        auth_header = ("Bearer " + token_in.token)
+        headers = {"Authorization": auth_header, "Accept": "application/json"}
+        req = requests.get(artist_url, headers=headers)
+        json_obj = req.json()
+        event_list = json_obj['events']
 
-        Loop through these artists, making a request to the Eventbrite API for each encoded artist string
+        for event in event_list:
+            event_name = event['name']
 
-        Only keep records where the event name has an adequate fuzzy match score to the artist name
+            if 'PARKING' not in event_name:
+                event_id = str(event['id'])
+                event_venue = event['venue']['name']
+                event_city = event['venue']['city']
+                event_state = event['venue']['state']
+                event_date_str = (event['eventDateUTC']).replace("T", " ")
+                event_date_cut = event_date_str[:19]
+                event_date_UTC = datetime.strptime(event_date_cut, '%Y-%m-%d %H:%M:%S')
+                lowest_price = event['ticketInfo']['minListPrice']
+                highest_price = event['ticketInfo']['maxListPrice']
+                ticket_count = event['ticketInfo']['totalTickets']
+                listing_count = event['ticketInfo']['totalListings']
 
-        Format items in API JSON response
+                """MYSQL INSERTION"""
+                insert_tuple = (
+                    artist_in, '', event_name, event_id, event_venue, event_city, event_state, event_date_UTC,
+                    lowest_price, highest_price, ticket_count, listing_count, current_date)
 
-        Insert into MYSQL, DynamoDB (NoSQL), and create local Pandas DF within loop
+                event_ql = 'INSERT INTO `STUBHUB_EVENTS` (`artist`, `artist_id`, `name`, `id`, `venue`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `ticket_count`, `listing_count`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
 
-        Append local DF to pandas DF from S3, overwrite in s3
+                cursor_in.execute(event_ql, insert_tuple)
+                connection_in.commit()
 
-    """
+                """DYNAMODB INSERTION"""
+                venue_dict = event['venue']
+                price_dict = event['ticketInfo']
 
+                event_key = (
+                        event_name + event_venue + event_city + event_state + str(event_date_UTC) + str(
+                    current_date))
+                # print(event_key)
+
+                dynamotable_in.put_item(
+
+                    Item={
+                        'Event_ID': event_key,
+                        'name': event['name'],
+                        'artist': artist_in,
+                        'city': venue_dict['city'],
+                        'date_UTC': str(event['eventDateUTC']).replace("T", " "),
+                        'state': venue_dict['state'],
+                        'venue': venue_dict['name'],
+                        'create_ts': str(current_date),
+                        'lowest_price': int(price_dict['minListPrice']),
+                        'highest_price': int(price_dict['maxListPrice']),
+                        'ticket_count': int(price_dict['totalTickets']),
+                        'listing_count': int(price_dict['totalListings'])
+                    }
+                )
+
+                """S3 NEW DATA CREATION"""
+                event_array = pd.DataFrame([[artist_in, '', event_name, event_id, event_venue, event_city,
+                                             event_state, event_date_UTC, lowest_price, highest_price,
+                                             ticket_count, listing_count, current_date]],
+                                           columns=['artist', 'artist_id', 'name', 'ID', 'venue', 'city',
+                                                    'state', 'date_UTC', 'lowest_price', 'highest_price',
+                                                    'ticket_count', 'listing_count', 'create_ts'])
+
+                temp_df = temp_df.append(event_array, ignore_index=True, sort=True)
+
+            return temp_df
+
+    except KeyError as Overload:
+        print(KeyError)
+        print('exceeded quota for stubhub API')
+
+
+def pull_caller(inner_func):
+    
     """DB CONNECTIONS"""
     connection = pymysql.connect('ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', 'tickets_user', 'tickets_pass',
                                  'tickets_db')
@@ -119,19 +215,19 @@ def stubhub_event_pull():
         s3_client = boto3.client('s3')
         bucket = 'willjeventdata'
         key = 'stubhub_events.pkl'
-        key_json = 'stubhub/stubhub_events.json'
+        key_temp = 'stubhub/temp data/stubhub_temp.pkl'
+        key_json = 'stubhub/main data/stubhub_events.json'
         response = s3_client.get_object(Bucket=bucket, Key=key)
         event_dict = (response['Body'].read())
         event_json = json.loads(event_dict.decode('utf8'))
-        master_event_df = pd.DataFrame.from_dict(event_json)
-        print('The S3 JSON list started with ' + str(len(master_event_df)) + ' records')
+        # master_event_df = pd.DataFrame.from_dict(event_json)
+        print('The S3 JSON list started with ' + str(len(event_json)) + ' records')
+        # master_event_df = pd.DataFrame()
         temp_df = pd.DataFrame()
 
         """GET ARTISTS DF FROM MYSQL"""
         artists_df = data_fetch_pymysql().head(250)['artist']
 
-        """CURRENT DATE ASSIGNMENT"""
-        current_date = datetime.now()
 
         """INITIALIZE INCREMENTING VARIABLE"""
         i = 1
@@ -143,426 +239,65 @@ def stubhub_event_pull():
             artist_url = (base_url + "?" + query_params)
 
             if i <= 50:
-
-                print(i)
-                try:
-                    auth_header = ("Bearer " + token1.token)
-                    headers = {"Authorization": auth_header, "Accept": "application/json"}
-                    req = requests.get(artist_url, headers=headers)
-                    json_obj = req.json()
-                    event_list = json_obj['events']
-
-                    for event in event_list:
-                        event_name = event['name']
-
-                        if 'PARKING' not in event_name:
-                            event_id = str(event['id'])
-                            event_venue = event['venue']['name']
-                            event_city = event['venue']['city']
-                            event_state = event['venue']['state']
-                            event_date_str = (event['eventDateUTC']).replace("T", " ")
-                            event_date_cut = event_date_str[:19]
-                            event_date_UTC = datetime.strptime(event_date_cut, '%Y-%m-%d %H:%M:%S')
-                            lowest_price = event['ticketInfo']['minListPrice']
-                            highest_price = event['ticketInfo']['maxListPrice']
-                            ticket_count = event['ticketInfo']['totalTickets']
-                            listing_count = event['ticketInfo']['totalListings']
-
-                            """MYSQL INSERTION"""
-                            insert_tuple = (
-                                artist, '', event_name, event_id, event_venue, event_city, event_state, event_date_UTC,
-                                lowest_price, highest_price, ticket_count, listing_count, current_date)
-
-                            event_ql = 'INSERT INTO `STUBHUB_EVENTS` (`artist`, `artist_id`, `name`, `id`, `venue`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `ticket_count`, `listing_count`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
-
-                            cursor.execute(event_ql, insert_tuple)
-                            connection.commit()
-
-                            """DYNAMODB INSERTION"""
-                            venue_dict = event['venue']
-                            price_dict = event['ticketInfo']
-
-                            event_key = (
-                                    event_name + event_venue + event_city + event_state + str(event_date_UTC) + str(
-                                current_date))
-                            # print(event_key)
-
-                            dynamotable.put_item(
-
-                                Item={
-                                    'Event_ID': event_key,
-                                    'name': event['name'],
-                                    'artist': artist,
-                                    'city': venue_dict['city'],
-                                    'date_UTC': str(event['eventDateUTC']).replace("T", " "),
-                                    'state': venue_dict['state'],
-                                    'venue': venue_dict['name'],
-                                    'create_ts': str(current_date),
-                                    'lowest_price': int(price_dict['minListPrice']),
-                                    'highest_price': int(price_dict['maxListPrice']),
-                                    'ticket_count': int(price_dict['totalTickets']),
-                                    'listing_count': int(price_dict['totalListings'])
-                                }
-                            )
-
-                            """S3 NEW DATA CREATION"""
-                            event_array = pd.DataFrame([[artist, '', event_name, event_id, event_venue, event_city,
-                                                         event_state, event_date_UTC, lowest_price, highest_price,
-                                                         ticket_count, listing_count, current_date]],
-                                                       columns=['artist', 'artist_id', 'name', 'ID', 'venue', 'city',
-                                                                'state', 'date_UTC', 'lowest_price', 'highest_price',
-                                                                'ticket_count', 'listing_count', 'create_ts'])
-
-                            temp_df = temp_df.append(event_array, ignore_index=True, sort=True)
-
-
-                except KeyError as Overload:
-                    print(KeyError)
-                    print('exceeded quota for stubhub API')
-
+                
+                temp_df = stubhub_event_pull(temp_df, artist, artist_url, cursor, connection, dynamotable, token1)
+                
             elif 50 < i <= 100:
-                print(i)
-
-                try:
-                    auth_header = ("Bearer " + token2.token)
-                    headers = {"Authorization": auth_header, "Accept": "application/json"}
-                    req = requests.get(artist_url, headers=headers)
-                    json_obj = req.json()
-
-                    # print(json_obj)
-
-                    event_list = json_obj['events']
-
-                    for event in event_list:
-                        event_name = event['name']
-
-                        if 'PARKING' not in event_name:
-                            event_id = str(event['id'])
-                            event_venue = event['venue']['name']
-                            event_city = event['venue']['city']
-                            event_state = event['venue']['state']
-                            event_date_str = (event['eventDateUTC']).replace("T", " ")
-                            event_date_cut = event_date_str[:19]
-                            event_date_UTC = datetime.strptime(event_date_cut, '%Y-%m-%d %H:%M:%S')
-                            lowest_price = event['ticketInfo']['minListPrice']
-                            highest_price = event['ticketInfo']['maxListPrice']
-                            ticket_count = event['ticketInfo']['totalTickets']
-                            listing_count = event['ticketInfo']['totalListings']
-
-                            """MYSQL INSERTION"""
-                            insert_tuple = (
-                                artist, '', event_name, event_id, event_venue, event_city, event_state, event_date_UTC,
-                                lowest_price, highest_price, ticket_count, listing_count, current_date)
-
-                            event_ql = 'INSERT INTO `STUBHUB_EVENTS` (`artist`, `artist_id`, `name`, `id`, `venue`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `ticket_count`, `listing_count`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
-
-                            cursor.execute(event_ql, insert_tuple)
-                            connection.commit()
-
-                            """DYNAMODB INSERTION"""
-                            venue_dict = event['venue']
-                            price_dict = event['ticketInfo']
-
-                            event_key = (
-                                    event_name + event_venue + event_city + event_state + str(event_date_UTC) + str(
-                                current_date))
-                            # print(event_key)
-
-                            dynamotable.put_item(
-                                Item={
-                                    'Event_ID': event_key,
-                                    'name': event['name'],
-                                    'artist': artist,
-                                    'city': venue_dict['city'],
-                                    'date_UTC': str(event['eventDateUTC']).replace("T", " "),
-                                    'state': venue_dict['state'],
-                                    'venue': venue_dict['name'],
-                                    'create_ts': str(current_date),
-                                    'lowest_price': int(price_dict['minListPrice']),
-                                    'highest_price': int(price_dict['maxListPrice']),
-                                    'ticket_count': int(price_dict['totalTickets']),
-                                    'listing_count': int(price_dict['totalListings'])
-                                }
-                            )
-
-                            """S3 NEW DATA CREATION"""
-                            event_array = pd.DataFrame([[artist, '', event_name, event_id, event_venue, event_city,
-                                                         event_state, event_date_UTC, lowest_price, highest_price,
-                                                         ticket_count, listing_count, current_date]],
-                                                       columns=['artist', 'artist_id', 'name', 'ID', 'venue', 'city',
-                                                                'state', 'date_UTC', 'lowest_price', 'highest_price',
-                                                                'ticket_count', 'listing_count', 'create_ts'])
-
-                            temp_df = temp_df.append(event_array, ignore_index=True, sort=True)
-
-                except KeyError as Overload:
-
-                    print(KeyError)
-                    print('exceeded quota for stubhub API')
-
+                
+                temp_df = stubhub_event_pull(temp_df, artist, artist_url, cursor, connection, dynamotable, token2)
+            
             elif 100 < i <= 150:
-
-                print(i)
-
-                try:
-                    auth_header = ("Bearer " + token3.token)
-                    headers = {"Authorization": auth_header, "Accept": "application/json"}
-                    req = requests.get(artist_url, headers=headers)
-                    json_obj = req.json()
-
-                    # print(json_obj)
-
-                    event_list = json_obj['events']
-
-                    for event in event_list:
-                        event_name = event['name']
-
-                        if 'PARKING' not in event_name:
-                            event_id = str(event['id'])
-                            event_venue = event['venue']['name']
-                            event_city = event['venue']['city']
-                            event_state = event['venue']['state']
-                            event_date_str = (event['eventDateUTC']).replace("T", " ")
-                            event_date_cut = event_date_str[:19]
-                            event_date_UTC = datetime.strptime(event_date_cut, '%Y-%m-%d %H:%M:%S')
-                            lowest_price = event['ticketInfo']['minListPrice']
-                            highest_price = event['ticketInfo']['maxListPrice']
-                            ticket_count = event['ticketInfo']['totalTickets']
-                            listing_count = event['ticketInfo']['totalListings']
-
-                            """MYSQL INSERTION"""
-                            insert_tuple = (
-                                artist, '', event_name, event_id, event_venue, event_city, event_state, event_date_UTC,
-                                lowest_price, highest_price, ticket_count, listing_count, current_date)
-
-                            event_ql = 'INSERT INTO `STUBHUB_EVENTS` (`artist`, `artist_id`, `name`, `id`, `venue`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `ticket_count`, `listing_count`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
-
-                            cursor.execute(event_ql, insert_tuple)
-                            connection.commit()
-
-                            """DYNAMODB INSERTION"""
-                            venue_dict = event['venue']
-                            price_dict = event['ticketInfo']
-
-                            event_key = (
-                                    event_name + event_venue + event_city + event_state + str(event_date_UTC) + str(
-                                current_date))
-                            # print(event_key)
-
-                            dynamotable.put_item(
-                                Item={
-                                    'Event_ID': event_key,
-                                    'name': event['name'],
-                                    'artist': artist,
-                                    'city': venue_dict['city'],
-                                    'date_UTC': str(event['eventDateUTC']).replace("T", " "),
-                                    'state': venue_dict['state'],
-                                    'venue': venue_dict['name'],
-                                    'create_ts': str(current_date),
-                                    'lowest_price': int(price_dict['minListPrice']),
-                                    'highest_price': int(price_dict['maxListPrice']),
-                                    'ticket_count': int(price_dict['totalTickets']),
-                                    'listing_count': int(price_dict['totalListings'])
-                                }
-                            )
-
-                            """S3 NEW DATA CREATION"""
-                            event_array = pd.DataFrame([[artist, '', event_name, event_id, event_venue, event_city,
-                                                         event_state, event_date_UTC, lowest_price, highest_price,
-                                                         ticket_count, listing_count, current_date]],
-                                                       columns=['artist', 'artist_id', 'name', 'ID', 'venue', 'city',
-                                                                'state', 'date_UTC', 'lowest_price', 'highest_price',
-                                                                'ticket_count', 'listing_count', 'create_ts'])
-
-                            temp_df = temp_df.append(event_array, ignore_index=True, sort=True)
-
-                except KeyError as Overload:
-                    print(KeyError)
-                    print('exceeded quota for stubhub API')
-
+                
+                temp_df = stubhub_event_pull(temp_df, artist, artist_url, cursor, connection, dynamotable, token3)
+                
             elif 150 < i <= 200:
-
-                print(i)
-
-                try:
-                    auth_header = ("Bearer " + token4.token)
-                    headers = {"Authorization": auth_header, "Accept": "application/json"}
-                    req = requests.get(artist_url, headers=headers)
-                    json_obj = req.json()
-
-                    # print(json_obj)
-
-                    event_list = json_obj['events']
-
-                    for event in event_list:
-                        event_name = event['name']
-                        if 'PARKING' not in event_name:
-                            event_id = str(event['id'])
-                            event_venue = event['venue']['name']
-                            event_city = event['venue']['city']
-                            event_state = event['venue']['state']
-                            event_date_str = (event['eventDateUTC']).replace("T", " ")
-                            event_date_cut = event_date_str[:19]
-                            event_date_UTC = datetime.strptime(event_date_cut, '%Y-%m-%d %H:%M:%S')
-                            lowest_price = event['ticketInfo']['minListPrice']
-                            highest_price = event['ticketInfo']['maxListPrice']
-                            ticket_count = event['ticketInfo']['totalTickets']
-                            listing_count = event['ticketInfo']['totalListings']
-
-                            """MYSQL INSERTION"""
-                            insert_tuple = (
-                                artist, '', event_name, event_id, event_venue, event_city, event_state, event_date_UTC,
-                                lowest_price, highest_price, ticket_count, listing_count, current_date)
-
-                            event_ql = 'INSERT INTO `STUBHUB_EVENTS` (`artist`, `artist_id`, `name`, `id`, `venue`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `ticket_count`, `listing_count`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
-
-                            cursor.execute(event_ql, insert_tuple)
-                            connection.commit()
-
-                            """DYNAMODB INSERTION"""
-                            venue_dict = event['venue']
-                            price_dict = event['ticketInfo']
-
-                            event_key = (
-                                    event_name + event_venue + event_city + event_state + str(event_date_UTC) + str(
-                                current_date))
-                            # print(event_key)
-
-                            dynamotable.put_item(
-                                Item={
-                                    'Event_ID': event_key,
-                                    'name': event['name'],
-                                    'artist': artist,
-                                    'city': venue_dict['city'],
-                                    'date_UTC': str(event['eventDateUTC']).replace("T", " "),
-                                    'state': venue_dict['state'],
-                                    'venue': venue_dict['name'],
-                                    'create_ts': str(current_date),
-                                    'lowest_price': int(price_dict['minListPrice']),
-                                    'highest_price': int(price_dict['maxListPrice']),
-                                    'ticket_count': int(price_dict['totalTickets']),
-                                    'listing_count': int(price_dict['totalListings'])
-                                }
-                            )
-
-                            """S3 NEW DATA CREATION"""
-                            event_array = pd.DataFrame([[artist, '', event_name, event_id, event_venue, event_city,
-                                                         event_state, event_date_UTC, lowest_price, highest_price,
-                                                         ticket_count, listing_count, current_date]],
-                                                       columns=['artist', 'artist_id', 'name', 'ID', 'venue', 'city',
-                                                                'state', 'date_UTC', 'lowest_price', 'highest_price',
-                                                                'ticket_count', 'listing_count', 'create_ts'])
-
-                            temp_df = temp_df.append(event_array, ignore_index=True, sort=True)
-
-                except KeyError as Overload:
-                    print(KeyError)
-                    print('exceeded quota for stubhub API')
-
+                
+                temp_df = stubhub_event_pull(temp_df, artist, artist_url, cursor, connection, dynamotable, token4)
+                
             else:
-
-                print(i)
-
-                try:
-                    auth_header = ("Bearer " + token5.token)
-                    headers = {"Authorization": auth_header, "Accept": "application/json"}
-                    req = requests.get(artist_url, headers=headers)
-                    json_obj = req.json()
-
-                    # print(json_obj)
-
-                    event_list = json_obj['events']
-
-                    for event in event_list:
-
-                        event_name = event['name']
-                        if 'PARKING' not in event_name:
-                            event_id = str(event['id'])
-                            event_venue = event['venue']['name']
-                            event_city = event['venue']['city']
-                            event_state = event['venue']['state']
-                            event_date_str = (event['eventDateUTC']).replace("T", " ")
-                            event_date_cut = event_date_str[:19]
-                            event_date_UTC = datetime.strptime(event_date_cut, '%Y-%m-%d %H:%M:%S')
-                            lowest_price = event['ticketInfo']['minListPrice']
-                            highest_price = event['ticketInfo']['maxListPrice']
-                            ticket_count = event['ticketInfo']['totalTickets']
-                            listing_count = event['ticketInfo']['totalListings']
-
-                            """MYSQL INSERTION"""
-                            insert_tuple = (
-                                artist, '', event_name, event_id, event_venue, event_city, event_state, event_date_UTC,
-                                lowest_price, highest_price, ticket_count, listing_count, current_date)
-
-                            event_ql = 'INSERT INTO `STUBHUB_EVENTS` (`artist`, `artist_id`, `name`, `id`, `venue`, `city`, `state`, `date_UTC`, `lowest_price`, `highest_price`, `ticket_count`, `listing_count`, `create_ts`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
-
-                            cursor.execute(event_ql, insert_tuple)
-                            connection.commit()
-
-                            """DYNAMODB INSERTION"""
-                            venue_dict = event['venue']
-                            price_dict = event['ticketInfo']
-
-                            event_key = (
-                                    event_name + event_venue + event_city + event_state + str(event_date_UTC) + str(
-                                current_date))
-                            # print(event_key)
-
-                            dynamotable.put_item(
-
-                                Item={
-                                    'Event_ID': event_key,
-                                    'name': event['name'],
-                                    'artist': artist,
-                                    'city': venue_dict['city'],
-                                    'date_UTC': str(event['eventDateUTC']).replace("T", " "),
-                                    'state': venue_dict['state'],
-                                    'venue': venue_dict['name'],
-                                    'create_ts': str(current_date),
-                                    'lowest_price': int(price_dict['minListPrice']),
-                                    'highest_price': int(price_dict['maxListPrice']),
-                                    'ticket_count': int(price_dict['totalTickets']),
-                                    'listing_count': int(price_dict['totalListings'])
-                                }
-                            )
-
-                            """S3 NEW DATA CREATION"""
-                            event_array = pd.DataFrame([[artist, '', event_name, event_id, event_venue, event_city,
-                                                         event_state, event_date_UTC, lowest_price, highest_price,
-                                                         ticket_count, listing_count, current_date]],
-                                                       columns=['artist', 'artist_id', 'name', 'ID', 'venue', 'city',
-                                                                'state', 'date_UTC', 'lowest_price', 'highest_price',
-                                                                'ticket_count', 'listing_count', 'create_ts'])
-
-                            temp_df = temp_df.append(event_array, ignore_index=True, sort=True)
-
-                except KeyError as Overload:
-
-                    print(KeyError)
-                    print('exceeded quota for stubhub API')
-
+                
+                temp_df = stubhub_event_pull(temp_df, artist, artist_url, cursor, connection, dynamotable, token5)
+                
             i = i + 1
-
-        """APPEND LOCAL DF TO MASTER DF PULLED FROM S3"""
-        master_event_df = master_event_df.append(temp_df, sort=True)
-        print('The S3 JSON list now has ' + str(len(master_event_df)) + ' records')
-
-        """S3 UPDATE"""
-        s3_resource = boto3.resource('s3')
-        new_event_json = master_event_df.to_json(orient='records')
-        s3_resource.Object(bucket, key).put(Body=new_event_json)
-
-        """S3 UPDATE .JSON"""
-        json_reform = new_event_json.replace('[{', '{').replace(']}', '}').replace('},', '}\n')
-        s3_resource.Object(bucket, key_json).put(Body=json_reform)
-
-
+            
     except s3_client.exceptions.NoSuchKey:
 
         print('THE S3 BUCKET SOMEHOW GOT DELETED...')
+        
+        
+    """DICT APPEND METHOD"""
+    """S3 RESOURCE"""
+
+    s3_resource = boto3.resource('s3')
+    """MAKE DICT FROM TEMP DATAFRAME"""
+    temp_dict = temp_df.to_dict('records')
+
+    """MERGE TEMP DICT AND MASTER DICT"""
+    appended_dict = event_json + temp_dict
+    print('The S3 JSON list now has ' + str(len(appended_dict)) + ' records')
+
+    """S3 FROM TEMP DICT"""
+    temp_dict_stg = json.dumps(temp_dict, default=myconverter)
+    # s3_resource.Object(bucket, key_temp).put(Body=temp_dict_stg)
+    s3_resource.Object(bucket, key_temp).put(Body=temp_dict_stg)
+    print('successfully stored the ' + str(len(temp_dict)) + ' records of new data')
+
+    """S3 PKL FROM APPENDED DICT"""
+    appended_dict_stg = json.dumps(appended_dict, default=myconverter)
+    # s3_resource.Object(bucket, key).put(Body=appended_dict_stg)
+    s3_resource.Object(bucket, key).put(Body=appended_dict_stg)
+    print('successfully overwrote the PKL file which now has ' + str(len(appended_dict)) + ' records')
+
+    """S3 JSON FROM APPENDED DICT"""
+    appended_json = appended_dict_stg.replace('[{', '{').replace(']}', '}').replace('},', '}\n')
+    # s3_resource.Object(bucket,key_json).put(Body=appended_json)
+    s3_resource.Object(bucket, key_json).put(Body=appended_json)
+    print('successfully overwrote main JSON file which now has ' + str(len(appended_dict)) + ' records')
 
 
-stubhub_event_pull()
+"""CALL MAIN FUNCTION"""
+pull_caller(stubhub_event_pull)
+
 
 """PRINT TO LOG FOR MONITORING PURPOSES"""
 current_date = datetime.now()
