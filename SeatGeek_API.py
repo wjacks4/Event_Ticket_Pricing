@@ -254,22 +254,22 @@ def seatgeek_events():
                     connection.commit()
 
                     """DYNAMODB INSERTION"""
-                    venue_dict = event['venue']
-                    price_dict = event['stats']
+                    # venue_dict = event['venue']
+                    # price_dict = event['stats']
 
-                    event_key = (event_name + str(event_id) + event_venue + event_city + event_state + str(event_date_utc) + str(current_date))
+                    # event_key = (event_name + str(event_id) + event_venue + event_city + event_state + str(event_date_utc) + str(current_date))
                     # print(event_key)
-                    dynamoTable.put_item(
-
-                        Item={
-                            'Event_ID': event_key, 'name': event['title'], 'artist': artist, 'city': venue_dict['city'],
-                            'date_UTC': str(event['datetime_utc']), 'state': venue_dict['state'],
-                            'venue': venue_dict['name'], 'capacity': venue_dict['capacity'], 'create_ts': str(current_date),
-                            'lowest_price': price_dict['lowest_price'], 'highest_price': price_dict['highest_price'],
-                            'median_price': price_dict['median_price'], 'average_price': price_dict['average_price'],
-                            'listing_count': price_dict['listing_count']
-                        }
-                    )
+                    # dynamoTable.put_item(
+                    #
+                    #    Item={
+                    #        'Event_ID': event_key, 'name': event['title'], 'artist': artist, 'city': venue_dict['city'],
+                    #        'date_UTC': str(event['datetime_utc']), 'state': venue_dict['state'],
+                    #        'venue': venue_dict['name'], 'capacity': venue_dict['capacity'], 'create_ts': str(current_date),
+                    #        'lowest_price': price_dict['lowest_price'], 'highest_price': price_dict['highest_price'],
+                    #        'median_price': price_dict['median_price'], 'average_price': price_dict['average_price'],
+                    #        'listing_count': price_dict['listing_count']
+                    #    }
+                    # )
 
                     """S3 NEW DATA CREATION"""
                     event_array = pd.DataFrame([[artist, event_name, event_id, event_venue, event_capacity,
