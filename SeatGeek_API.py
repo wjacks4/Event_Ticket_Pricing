@@ -122,7 +122,7 @@ def seatgeek_events():
     """
 
     """GET ARTISTS DATAFRAME"""
-    artists_df = data_fetch_pymysql().head(5)['artist']
+    artists_df = data_fetch_pymysql().head(250)['artist']
 
     """CURRENT DATE ASSIGNMENT"""
     current_date = datetime.now()
