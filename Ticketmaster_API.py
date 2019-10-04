@@ -18,7 +18,7 @@ import urllib
 import pymysql
 import datetime
 from datetime import datetime
-from fuzzywuzzy import fuzz
+# from fuzzywuzzy import fuzz
 
 """PRINT TO LOG FOR MONITORING PURPOSES"""
 current_date = datetime.now()
@@ -164,6 +164,7 @@ def ticketmaster_event_pull():
         key_json = 'ticketmaster/main data/ticketmaster_events.json'
         response = s3_client.get_object(Bucket=bucket, Key=key)
         event_dict = (response['Body'].read())
+        print(event_dict)
         event_json = json.loads(event_dict.decode('utf8'))
         # master_event_df = pd.DataFrame.from_dict(event_json)
         print('The S3 JSON list started with ' + str(len(event_json))+ ' records')
@@ -229,7 +230,7 @@ def ticketmaster_event_pull():
                                     event_state = 'NA'
 
                                 try:
-                                    date_UTC = event['dates']['start']['dateTime']
+                                    date_UTC = (event['dates']['start']['dateTime']).replace('Z', '')
                                 except KeyError as noEventTime:
                                     date_UTC = 'NA'
 
@@ -350,7 +351,7 @@ def ticketmaster_event_pull():
                                 event_state = 'NA'
 
                             try:
-                                date_UTC = event['dates']['start']['dateTime']
+                                date_UTC = (event['dates']['start']['dateTime']).replace('Z', '')
                             except KeyError as noEventTime:
                                 date_UTC = 'NA'
 
@@ -486,11 +487,8 @@ def ticketmaster_event_pull():
 
 
         """ATHENA DROP AND CREATE TEMP TABLE"""
-        columns_string = str(temp_df.columns.values).replace("['", "`").replace(" '", " `").replace("']",
-                                                                                                    '` string').replace(
-            "' ", "` string, ").replace("'\n", "` string, ").replace("`date_UTC` string",
-                                                                     "`date_UTC` timestamp").replace(
-            "`create_ts` string", "`create_ts` timestamp")
+        columns_string = str(temp_df.columns.values).replace("['", "`").replace(" '", " `").replace("']",'` string').replace(
+            "' ", "` string, ").replace("'\n", "` string, ").replace("`create_ts` string", "`create_ts` timestamp")
         athena_drop_temp()
         time.sleep(10)
         athena_create_temp(columns_string)

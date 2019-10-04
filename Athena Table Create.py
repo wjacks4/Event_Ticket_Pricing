@@ -52,7 +52,7 @@ class athena_table_creator:
                'city, '
                'state, '
                'date_UTC, '
-               'max(lowest_price) as lowest_price_day, create_date, '
+               'max(lowest_price) as lowest_price_day, create_date '
                'from ('
                'select *, date(create_ts) as create_date '
                'from ' + self.events_table + ' order by create_ts desc'
@@ -80,10 +80,19 @@ class athena_table_creator:
         )
                            
    
-seatgeek_athena = athena_table_creator('seatgeek')
+#seatgeek_athena = athena_table_creator('seatgeek')
+ticketmaster_athena = athena_table_creator('ticketmaster')
+#stubhub_athena = athena_table_creator('stubhub')
+#eventbrite_athena = athena_table_creator('eventbrite')
 
-seatgeek_athena.athena_drop_main()
-seatgeek_athena.athena_daily_lowest()
+#seatgeek_athena.athena_drop_main()
+#seatgeek_athena.athena_daily_lowest()
 
-       
-       
+ticketmaster_athena.athena_drop_main()
+ticketmaster_athena.athena_daily_lowest()
+
+#stubhub_athena.athena_drop_main()
+#stubhub_athena.athena_daily_lowest()
+
+#eventbrite_athena.athena_drop_main()
+#eventbrite_athena.athena_daily_lowest()
