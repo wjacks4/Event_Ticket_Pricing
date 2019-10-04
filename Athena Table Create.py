@@ -15,7 +15,8 @@ class athena_table_creator:
         self.bucket_pkl_string = str(source + '_events.pkl')
         self.new_json_string = str(source + '_events.json')
         self.source_str = str(source)
-        self.table = str(source+'_events2')
+        self.events_table = str(source+'_events')
+        self.daily_lowest = str(source + '_daily_lowest')
 
     def athena_seatgeek_clean(self):
         athena_client = boto3.client('athena')
@@ -36,30 +37,53 @@ class athena_table_creator:
             ResultConfiguration={'OutputLocation': 's3://aws-athena-results-tickets-db/seatgeek/'}
         )
             
-            
-    def athena_daily_lowest(self):
+    def athena_drop_main(self):
         athena_client = boto3.client('athena')
         response = athena_client.start_query_execution(
-            QueryString = ('create table seatgeek_daily_lowest as select distinct artist,'
-                           'name,'
-                           'venue,' 
-                           'city,'
-                           'state,'
-                           'date_UTC,'
-                           'max(lowest_price) as lowest_price_day, create_date,'
-                           'from ('
-                           'select *, date(create_ts) as create_date from seatgeek_events order by create_ts desc
-                           ')'
-                           'group by artist, name, venue, city, state, date_UTC, create_date;'
+            QueryString = ('drop table ' + self.daily_lowest),
+            QueryExecutionContext ={'Database':'tickets_db'},
+            ResultConfiguration={'OutputLocation':'s3://aws-athena-results-tickets-db/' + self.source_str + '/'}
+        )            
+
+    def athena_daily_lowest(self):
+        qstring = ('create table ' + self.daily_lowest + ' as select distinct artist,'
+               'name, '
+               'venue, ' 
+               'city, '
+               'state, '
+               'date_UTC, '
+               'max(lowest_price) as lowest_price_day, create_date, '
+               'from ('
+               'select *, date(create_ts) as create_date '
+               'from ' + self.events_table + ' order by create_ts desc'
+               ') '
+               'group by artist, name, venue, city, state, date_UTC, create_date;'
+               )
+        print(qstring)
+        athena_client = boto3.client('athena')
+        response = athena_client.start_query_execution(
+            QueryString = ('create table ' + self.daily_lowest + ' as select distinct artist,'
+                       'name, '
+                       'venue, ' 
+                       'city, '
+                       'state, '
+                       'date_UTC, '
+                       'max(lowest_price) as lowest_price_day, create_date '
+                       'from ('
+                       'select *, date(create_ts) as create_date '
+                       'from ' + self.events_table + ' order by create_ts desc'
+                       ') '
+                       'group by artist, name, venue, city, state, date_UTC, create_date;'
             ),
             QueryExecutionContext={'Database':'tickets_db'},
-            ResultConfiguration={'OutputLocation': 's3://aws-athena-results-tickets-tb/seatgeek/'}
-            
+            ResultConfiguration={'OutputLocation': 's3://aws-athena-results-tickets-tb/' + self.source_str + '/'}
         )
-        
-        
-        
+                           
+   
+seatgeek_athena = athena_table_creator('seatgeek')
 
+seatgeek_athena.athena_drop_main()
+seatgeek_athena.athena_daily_lowest()
 
-
-
+       
+       
