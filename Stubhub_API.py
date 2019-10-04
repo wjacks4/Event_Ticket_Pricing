@@ -142,8 +142,6 @@ token4 = keys(b'Q53rXMFZn9FfQuxNJhYJAPhbxFTDpH59', b'pQSLJvFEuk2AoHqG', 'buttere
 token5 = keys(b'uyoddTC6PL6ZIGaMkirj64bFRvLbMoDY', b'Ok4sujJFfhvYIT7W', 'sunglassman3123@gmail.com', 'Hester3123')
 
 
-
-
 def stubhub_event_pull(temp_df, artist_in, artist_url, cursor_in, connection_in, dynamotable_in, token_in):
     
     try:
@@ -186,7 +184,7 @@ def stubhub_event_pull(temp_df, artist_in, artist_url, cursor_in, connection_in,
                 event_key = (
                         event_name + event_venue + event_city + event_state + str(event_date_UTC) + str(
                     current_date))
-                # print(event_key)
+                print(event_key)
 
                 dynamotable_in.put_item(
 
@@ -249,7 +247,7 @@ def pull_caller(inner_func):
         temp_df = pd.DataFrame()
 
         """GET ARTISTS DF FROM MYSQL"""
-        artists_df = data_fetch_pymysql().head(250)['artist']
+        artists_df = data_fetch_pymysql().head(5)['artist']
 
         """INITIALIZE INCREMENTING VARIABLE"""
         i = 1
