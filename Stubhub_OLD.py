@@ -118,7 +118,7 @@ def stubhub_event_pull():
         temp_df = pd.DataFrame()
 
         """GET ARTISTS DF FROM MYSQL"""
-        artists_df = data_fetch_pymysql().head(250)['artist']
+        artists_df = data_fetch_pymysql().head(5)['artist']
 
         """CURRENT DATE ASSIGNMENT"""
         current_date = datetime.now()
@@ -141,6 +141,7 @@ def stubhub_event_pull():
                     req = requests.get(artist_url, headers=headers)
                     json_obj = req.json()
                     event_list = json_obj['events']
+                    print(len(event_list))
 
                     for event in event_list:
                         event_name = event['name']
@@ -175,7 +176,7 @@ def stubhub_event_pull():
                             event_key = (
                                     event_name + event_venue + event_city + event_state + str(event_date_UTC) + str(
                                 current_date))
-                            # print(event_key)
+                            print(event_key)
 
                             dynamotable.put_item(
 
