@@ -28,6 +28,7 @@ import base64
 import datetime
 import boto3
 from datetime import datetime
+from pprint import PrettyPrinter
 
 import boto3
 
@@ -135,7 +136,8 @@ class keys:
 
 
 """INITIALIZE EACH OF THE 5 INSTANCES OF THE CLASS 'KEYS'"""
-token1 = keys(b'zz5xHP3Miax2zeo9fnKivFSPGmWsLiSv', b'G4j3RRmpBxo8jM7s', 'wjacks4@g.clemson.edu', 'Hester3123')
+# token1 = keys(b'zz5xHP3Miax2zeo9fnKivFSPGmWsLiSv', b'G4j3RRmpBxo8jM7s', 'wjacks4@g.clemson.edu', 'Hester3123')
+token1 = keys(b'knI4wisTkeBR4txGgGzUiHvpgAHPfWp8', b'Y37FpPHhIiHJdrWL', 'pluug3123@gmail.com', 'Hester3123')
 token2 = keys(b'mwrKyXKBADj7gqY2jqmjAkXFpMgr0u5p', b'GF96v7mWwUDY5fnV', 'hiltonsounds@gmail.com', 'Hester3123')
 token3 = keys(b'hf0bANqvcOAJxqhoAccKEI9ulv2oovef', b'aOOlKPrTckv6iJPU', 'edenk@g.clemson.edu', 'Hester3123')
 token4 = keys(b'Q53rXMFZn9FfQuxNJhYJAPhbxFTDpH59', b'pQSLJvFEuk2AoHqG', 'butteredtoast66@gmail.com', 'Hester3123')
@@ -184,7 +186,6 @@ def stubhub_event_pull(temp_df, artist_in, artist_url, cursor_in, connection_in,
                 event_key = (
                         event_name + event_venue + event_city + event_state + str(event_date_UTC) + str(
                     current_date))
-                print(event_key)
 
                 dynamotable_in.put_item(
 
@@ -212,9 +213,14 @@ def stubhub_event_pull(temp_df, artist_in, artist_url, cursor_in, connection_in,
                                                     'state', 'date_UTC', 'lowest_price', 'highest_price',
                                                     'ticket_count', 'listing_count', 'create_ts'])
 
-                temp_df = temp_df.append(event_array, ignore_index=True, sort=True)
+                try:
+                    temp_df = temp_df.append(event_array, ignore_index=True, sort=True)
 
-            return temp_df
+                except AttributeError as Empty_DF:
+                    print(AttributeError)
+                    print('The Temporary Dataframe is empty')
+
+        return temp_df
 
     except KeyError as Overload:
         print(KeyError)
@@ -247,7 +253,7 @@ def pull_caller(inner_func):
         temp_df = pd.DataFrame()
 
         """GET ARTISTS DF FROM MYSQL"""
-        artists_df = data_fetch_pymysql().head(5)['artist']
+        artists_df = data_fetch_pymysql().head(250)['artist']
 
         """INITIALIZE INCREMENTING VARIABLE"""
         i = 1
