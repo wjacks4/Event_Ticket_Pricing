@@ -479,7 +479,7 @@ def ticketmaster_event_pull():
         print('successfully overwrote main JSON file which now has ' + str(len(appended_dict)) + ' records')
 
         """ATHENA CREATE DROP AND CREATE MAIN TABLE"""
-        columns_string = str(temp_df.columns.values).replace("['", "`").replace(" '", " `").replace("']", '` string').replace("' ", "` string, ").replace("'\n", "` string, ").replace("`date_UTC` string", "`date_UTC` timestamp").replace("`create_ts` string", "`create_ts` timestamp")
+        columns_string = str(temp_df.columns.values).replace("['", "`").replace(" '", " `").replace("']", '` string').replace("' ", "` string, ").replace("'\n", "` string, ").replace("`date_UTC` string", "`date_UTC` timestamp")
         athena_drop_main()
         time.sleep(10)
         athena_create_main(columns_string)
