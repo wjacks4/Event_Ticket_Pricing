@@ -170,9 +170,6 @@ def create_ticketmaster_s3():
 create_ticketmaster_s3()
         
         
-        
-        
-
 def create_seatgeek_s3():
 
     connection = connection = pymysql.connect(host='ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com',
