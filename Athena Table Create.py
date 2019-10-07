@@ -37,6 +37,7 @@ class athena_table_creator:
             ResultConfiguration={'OutputLocation': 's3://aws-athena-results-tickets-db/seatgeek/'}
         )
             
+            
     def athena_drop_main(self):
         athena_client = boto3.client('athena')
         response = athena_client.start_query_execution(

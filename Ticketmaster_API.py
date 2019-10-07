@@ -230,7 +230,7 @@ def ticketmaster_event_pull():
                                     event_state = 'NA'
 
                                 try:
-                                    date_UTC = (event['dates']['start']['dateTime']).replace('Z', '')
+                                    date_UTC = (event['dates']['start']['dateTime']).replace('Z', '').replace('T', ' ')
                                 except KeyError as noEventTime:
                                     date_UTC = 'NA'
 
@@ -351,7 +351,7 @@ def ticketmaster_event_pull():
                                 event_state = 'NA'
 
                             try:
-                                date_UTC = (event['dates']['start']['dateTime']).replace('Z', '')
+                                date_UTC = (event['dates']['start']['dateTime']).replace('Z', '').replace('T', ' ')
                             except KeyError as noEventTime:
                                 date_UTC = 'NA'
 
@@ -480,15 +480,14 @@ def ticketmaster_event_pull():
         print('successfully overwrote main JSON file which now has ' + str(len(appended_dict)) + ' records')
 
         """ATHENA CREATE DROP AND CREATE MAIN TABLE"""
-        columns_string = str(temp_df.columns.values).replace("['", "`").replace(" '", " `").replace("']", '` string').replace("' ", "` string, ").replace("'\n", "` string, ").replace("`date_UTC` string", "`date_UTC` timestamp")
+        columns_string = str(temp_df.columns.values).replace("['", "`").replace(" '", " `").replace("']", '` string').replace("' ", "` string, ").replace("'\n", "` string, ").replace("`create_ts` string", "`create_ts` timestamp")
         athena_drop_main()
         time.sleep(10)
         athena_create_main(columns_string)
 
 
         """ATHENA DROP AND CREATE TEMP TABLE"""
-        columns_string = str(temp_df.columns.values).replace("['", "`").replace(" '", " `").replace("']",'` string').replace(
-            "' ", "` string, ").replace("'\n", "` string, ").replace("`create_ts` string", "`create_ts` timestamp")
+        columns_string =  str(temp_df.columns.values).replace("['", "`").replace(" '", " `").replace("']", '` string').replace("' ", "` string, ").replace("'\n", "` string, ").replace("`create_ts` string", "`create_ts` timestamp")
         athena_drop_temp()
         time.sleep(10)
         athena_create_temp(columns_string)
