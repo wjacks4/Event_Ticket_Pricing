@@ -70,21 +70,28 @@ def myconverter(o):
 
 
 def athena_drop_main():
+    querystring = str('drop table if exists ticketmaster_events')
+    print(querystring)
     athena_client = boto3.client('athena')
     response = athena_client.start_query_execution(
         QueryString = ('drop table ticketmaster_events'),
         QueryExecutionContext ={'Database':'tickets_db'},
         ResultConfiguration={'OutputLocation':'s3://aws-athena-results-tickets-db/ticketmaster/'}
     )
+    print('athena main table dropped')
 
 
 def athena_drop_temp():
+    querystring = str('drop table if exists ticketmaster_temp')
+    print(querystring)
     athena_client = boto3.client('athena')
     response = athena_client.start_query_execution(
         QueryString = ('drop table if exists ticketmaster_temp'),
         QueryExecutionContext ={'Database':'tickets_db'},
         ResultConfiguration={'OutputLocation':'s3://aws-athena-results-tickets-db/ticketmaster/'}
     )
+    print('athena temp table dropped')
+
 
 
 def athena_create_temp(main_columns):
@@ -92,16 +99,17 @@ def athena_create_temp(main_columns):
                        ' (' + main_columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" \
                      LOCATION "s3://willjeventdata/ticketmaster/temp data/" TBLPROPERTIES ("has_encrypted_data"="false")')
                       )
-    # print(querystring)
+    print(querystring)
     athena_client = boto3.client('athena')
     response = athena_client.start_query_execution(
         QueryString=('create external table if not exists ticketmaster_temp'
-                     ' (' + main_columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" LOCATION \
-                     "s3://willjeventdata/ticketmaster/temp data/" TBLPROPERTIES ("has_encrypted_data"="false")'
+                       ' (' + main_columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" \
+                     LOCATION "s3://willjeventdata/ticketmaster/temp data/" TBLPROPERTIES ("has_encrypted_data"="false")'
                      ),
         QueryExecutionContext={'Database': 'tickets_db'},
         ResultConfiguration={'OutputLocation': 's3://aws-athena-results-tickets-db/ticketmaster/'}
     )
+    print('athena temp table created')
 
 
 def athena_create_main(main_columns):
@@ -166,7 +174,7 @@ def ticketmaster_event_pull():
         event_dict = (response['Body'].read())
         print(event_dict)
         event_json = json.loads(event_dict.decode('utf8'))
-        # master_event_df = pd.DataFrame.from_dict(event_json)
+        master_event_df = pd.DataFrame.from_dict(event_json)
         print('The S3 JSON list started with ' + str(len(event_json))+ ' records')
         temp_df = pd.DataFrame()
 
@@ -463,19 +471,19 @@ def ticketmaster_event_pull():
         """S3 FROM TEMP DICT"""
         temp_dict_stg = json.dumps(temp_dict, default=myconverter)
         temp_dict_json = temp_dict_stg.replace('[{', '{').replace(']}', '}').replace('},', '}\n')
-        # s3_resource.Object(bucket, key_temp).put(Body=temp_dict_stg)
+        s3_resource.Object(bucket, key_temp).put(Body=temp_dict_stg)
         s3_resource.Object(bucket, key_temp).put(Body=temp_dict_json)
         print('successfully stored the ' + str(len(temp_dict)) + ' records of new data')
 
         """S3 PKL FROM APPENDED DICT"""
         appended_dict_stg = json.dumps(appended_dict, default=myconverter)
-        # s3_resource.Object(bucket, key).put(Body=appended_dict_stg)
+        s3_resource.Object(bucket, key).put(Body=appended_dict_stg)
         s3_resource.Object(bucket, key).put(Body=appended_dict_stg)
         print('successfully overwrote the PKL file which now has ' + str(len(appended_dict)) + ' records')
 
         """S3 JSON FROM APPENDED DICT"""
         appended_json = appended_dict_stg.replace('[{', '{').replace(']}', '}').replace('},', '}\n')
-        # s3_resource.Object(bucket,key_json).put(Body=appended_json)
+        s3_resource.Object(bucket,key_json).put(Body=appended_json)
         s3_resource.Object(bucket, key_json).put(Body=appended_json)
         print('successfully overwrote main JSON file which now has ' + str(len(appended_dict)) + ' records')
 
