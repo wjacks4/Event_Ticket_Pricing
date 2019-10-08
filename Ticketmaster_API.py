@@ -150,7 +150,7 @@ def ticketmaster_event_pull():
 
     """
     """GET ARTISTS DATAFRAME"""
-    artists_df = data_fetch_pymysql().head(5)
+    artists_df = data_fetch_pymysql().head(250)
 
     """CURRENT DATE ASSIGNMENT"""
     current_date = datetime.now()
