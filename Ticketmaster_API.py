@@ -71,7 +71,7 @@ def myconverter(o):
 
 def athena_drop_main():
     querystring = str('drop table if exists ticketmaster_events')
-    print(querystring)
+    # print(querystring)
     athena_client = boto3.client('athena')
     response = athena_client.start_query_execution(
         QueryString = ('drop table ticketmaster_events'),
@@ -83,7 +83,7 @@ def athena_drop_main():
 
 def athena_drop_temp():
     querystring = str('drop table if exists ticketmaster_temp')
-    print(querystring)
+    # print(querystring)
     athena_client = boto3.client('athena')
     response = athena_client.start_query_execution(
         QueryString = ('drop table if exists ticketmaster_temp'),
@@ -115,14 +115,14 @@ def athena_create_temp(main_columns):
 def athena_create_main(main_columns):
     querystring = str(('create external table if not exists ticketmaster_events'
                        ' (' + main_columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" \
-                     LOCATION "s3://willjeventdata/ticketmaster/main data/" TBLPROPERTIES ("has_encrypted_data"="false")')
+                     LOCATION "s3://willjeventdata/ticketmaster/test data/" TBLPROPERTIES ("has_encrypted_data"="false")')
                       )
-    # print(querystring)
+    print(querystring)
     athena_client = boto3.client('athena')
     response = athena_client.start_query_execution(
         QueryString=('create external table if not exists ticketmaster_events'
                      ' (' + main_columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" LOCATION \
-                     "s3://willjeventdata/ticketmaster/main data/" TBLPROPERTIES ("has_encrypted_data"="false")'
+                     "s3://willjeventdata/ticketmaster/test data/" TBLPROPERTIES ("has_encrypted_data"="false")'
                      ),
         QueryExecutionContext={'Database': 'tickets_db'},
         ResultConfiguration={'OutputLocation': 's3://aws-athena-results-tickets-db/ticketmaster/'}
@@ -172,7 +172,7 @@ def ticketmaster_event_pull():
         key_json = 'ticketmaster/main data/ticketmaster_events.json'
         response = s3_client.get_object(Bucket=bucket, Key=key)
         event_dict = (response['Body'].read())
-        print(event_dict)
+        # print(event_dict)
         event_json = json.loads(event_dict.decode('utf8'))
         master_event_df = pd.DataFrame.from_dict(event_json)
         print('The S3 JSON list started with ' + str(len(event_json))+ ' records')
@@ -257,37 +257,21 @@ def ticketmaster_event_pull():
                                 except KeyError as noPriceDat:
                                     event_highest_price = ''
 
-                                """MYSQL INSERTION"""
-                                insert_tuple = (spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, date_UTC, event_sale_start, event_lowest_price, event_highest_price, current_date)
+                                if date_UTC != '0000-00-00 00:00:00' and date_UTC != '' and date_UTC != 'NA':
 
-                                event_QL = 'INSERT INTO TICKETMASTER_EVENTS(artist, artist_id, name, id, venue, city, state, date_UTC, sale_start, lowest_price, highest_price, create_ts) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);'
+                                    """MYSQL INSERTION"""
+                                    insert_tuple = (spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, date_UTC, event_sale_start, event_lowest_price, event_highest_price, current_date)
 
-                                cursor.execute(event_QL, insert_tuple)
-                                connection.commit()
+                                    event_QL = 'INSERT INTO TICKETMASTER_EVENTS(artist, artist_id, name, id, venue, city, state, date_UTC, sale_start, lowest_price, highest_price, create_ts) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);'
 
-                                """DYNAMO WAY TO DO IT"""
-                                record_key = (spotify_artist + event_name + event_venue + event_city + event_state + str(date_UTC) + str(current_date))
+                                    cursor.execute(event_QL, insert_tuple)
+                                    connection.commit()
 
-                                try:
-                                    dynamotable.put_item(
-                                        Item={
-                                            'Record_ID':record_key,
-                                            'name': event_name,
-                                            'artist': spotify_artist,
-                                            'city': event_city,
-                                            'date_UTC': str(date_UTC),
-                                            'state': event_state,
-                                            'venue': event_venue,
-                                            'create_ts': str(current_date),
-                                            'lowest_price': int(event_lowest_price),
-                                            'highest_price': int(event_highest_price)
-                                        }
-                                    )
+                                    """DYNAMO WAY TO DO IT"""
+                                    record_key = (spotify_artist + event_name + event_venue + event_city + event_state + str(date_UTC) + str(current_date))
 
-                                except ValueError as NoPrice:
                                     try:
                                         dynamotable.put_item(
-
                                             Item={
                                                 'Record_ID':record_key,
                                                 'name': event_name,
@@ -296,18 +280,36 @@ def ticketmaster_event_pull():
                                                 'date_UTC': str(date_UTC),
                                                 'state': event_state,
                                                 'venue': event_venue,
-                                                'create_ts': str(current_date)
+                                                'create_ts': str(current_date),
+                                                'lowest_price': int(event_lowest_price),
+                                                'highest_price': int(event_highest_price)
                                             }
                                         )
 
-                                    except ValueError as MissingData:
-                                        print('Too much missing data')
+                                    except ValueError as NoPrice:
+                                        try:
+                                            dynamotable.put_item(
 
-                                """S3 NEW DATA CREATION"""
-                                event_array=pd.DataFrame([[spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, date_UTC, event_sale_start, event_lowest_price, event_highest_price, current_date]],
-                                              columns=['artist', 'artist_id', 'name', 'event_id', 'venue', 'city', 'state', 'date_UTC', 'sale_start_date', 'lowest_price', 'highest_price', 'create_ts'])
+                                                Item={
+                                                    'Record_ID':record_key,
+                                                    'name': event_name,
+                                                    'artist': spotify_artist,
+                                                    'city': event_city,
+                                                    'date_UTC': str(date_UTC),
+                                                    'state': event_state,
+                                                    'venue': event_venue,
+                                                    'create_ts': str(current_date)
+                                                }
+                                            )
 
-                                temp_df = temp_df.append(event_array, ignore_index=True, sort=True)
+                                        except ValueError as MissingData:
+                                            print('Too much missing data')
+
+                                    """S3 NEW DATA CREATION"""
+                                    event_array=pd.DataFrame([[spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, date_UTC, event_sale_start, event_lowest_price, event_highest_price, current_date]],
+                                                  columns=['artist', 'artist_id', 'name', 'id', 'venue', 'city', 'state', 'date_UTC', 'sale_start', 'lowest_price', 'highest_price', 'create_ts'])
+
+                                    temp_df = temp_df.append(event_array, ignore_index=True, sort=True)
 
                     except KeyError as NoEmbedded:
                         print('No Embedded Data')
@@ -343,102 +345,108 @@ def ticketmaster_event_pull():
                             except KeyError as noName:
                                 event_name = 'NA'
 
-                            try:
-                                event_venue = event['_embedded']['venues'][0]['name']
-                            except KeyError as noVenue:
-                                event_venue = 'NA'
+                            spotify_name = spotify_artist
+                            ticketmaster_name = event_name
 
-                            try:
-                                event_city = event['_embedded']['venues'][0]['city']['name']
-                            except KeyError as noCity:
-                                event_city = 'NA'
+                            fuzz_partial = fuzz.partial_ratio(spotify_name.lower(), ticketmaster_name.lower())
+                            fuzz_ratio = fuzz.ratio(spotify_name.lower(), ticketmaster_name.lower())
 
-                            try:
-                                event_state = event['venues'][0]['state']['name']
-                            except KeyError as noState:
-                                event_state = 'NA'
+                            if (fuzz_ratio + fuzz_partial) > 150:
 
-                            try:
-                                date_UTC = (event['dates']['start']['dateTime']).replace('Z', '').replace('T', ' ')
-                            except KeyError as noEventTime:
-                                date_UTC = 'NA'
-
-                            try:
-                                event_sale_start = event['sales']['public']['startDateTime']
-                            except KeyError as noSaleStart:
-                                event_sale_start = 'NA'
-
-                            try:
-                                event_lowest_price = event['priceRanges'][0]['min']
-                            except KeyError as noPriceDat:
-                                event_lowest_price = ''
-
-                            try:
-                                event_highest_price = event['priceRanges'][0]['max']
-                            except KeyError as noPriceDat:
-                                event_highest_price = ''
-
-                            """MYSQL INSERTION"""
-                            insert_tuple = (
-                            spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city,
-                            event_state, date_UTC, event_sale_start, event_lowest_price, event_highest_price,
-                            current_date)
-
-                            event_QL = 'INSERT INTO TICKETMASTER_EVENTS(artist, artist_id, name, id, venue, city, state, date_UTC, sale_start, lowest_price, highest_price, create_ts) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);'
-
-                            cursor.execute(event_QL, insert_tuple)
-                            connection.commit()
-
-                            """DYNAMO WAY TO DO IT"""
-                            record_key = (spotify_artist + event_name + event_venue + event_city + event_state + str(
-                                date_UTC) + str(current_date))
-
-                            try:
-                                dynamotable.put_item(
-                                    Item={
-                                        'Record_ID': record_key,
-                                        'name': event_name,
-                                        'artist': spotify_artist,
-                                        'city': event_city,
-                                        'date_UTC': str(date_UTC),
-                                        'state': event_state,
-                                        'venue': event_venue,
-                                        'create_ts': str(current_date),
-                                        'lowest_price': int(event_lowest_price),
-                                        'highest_price': int(event_highest_price)
-                                    }
-                                )
-
-                            except ValueError as NoPrice:
                                 try:
-                                    dynamotable.put_item(
+                                    event_venue = event['_embedded']['venues'][0]['name']
+                                except KeyError as noVenue:
+                                    event_venue = 'NA'
 
-                                        Item={
-                                            'Record_ID': record_key,
-                                            'name': event_name,
-                                            'artist': spotify_artist,
-                                            'city': event_city,
-                                            'date_UTC': str(date_UTC),
-                                            'state': event_state,
-                                            'venue': event_venue,
-                                            'create_ts': str(current_date)
-                                        }
-                                    )
+                                try:
+                                    event_city = event['_embedded']['venues'][0]['city']['name']
+                                except KeyError as noCity:
+                                    event_city = 'NA'
 
-                                except ValueError as MissingData:
-                                    print('Too much missing data')
+                                try:
+                                    event_state = event['venues'][0]['state']['name']
+                                except KeyError as noState:
+                                    event_state = 'NA'
 
-                            """S3 NEW DATA CREATION"""
-                            event_array = pd.DataFrame([[spotify_artist, spotify_artist_id, event_name, event_id,
-                                                         event_venue, event_city, event_state, date_UTC,
-                                                         event_sale_start, event_lowest_price, event_highest_price,
-                                                         current_date]],
-                                                       columns=['artist', 'artist_id', 'name', 'id',
-                                                                'venue', 'city', 'state', 'date_UTC', 'sale_start',
-                                                                'lowest_price', 'highest_price',
-                                                                'create_ts'])
+                                try:
+                                    date_UTC = (event['dates']['start']['dateTime']).replace('Z', '').replace('T', ' ')
+                                except KeyError as noEventTime:
+                                    date_UTC = 'NA'
 
-                            temp_df = temp_df.append(event_array, ignore_index=True, sort=True)
+                                try:
+                                    event_sale_start = event['sales']['public']['startDateTime']
+                                except KeyError as noSaleStart:
+                                    event_sale_start = 'NA'
+
+                                try:
+                                    event_lowest_price = event['priceRanges'][0]['min']
+                                except KeyError as noPriceDat:
+                                    event_lowest_price = ''
+
+                                try:
+                                    event_highest_price = event['priceRanges'][0]['max']
+                                except KeyError as noPriceDat:
+                                    event_highest_price = ''
+
+                                if date_UTC != '%0000-00-00 00:00:0' and date_UTC != '' and date_UTC != 'NA':
+
+                                    """MYSQL INSERTION"""
+                                    insert_tuple = (
+                                    spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city,
+                                    event_state, date_UTC, event_sale_start, event_lowest_price, event_highest_price,
+                                    current_date)
+
+                                    event_QL = 'INSERT INTO TICKETMASTER_EVENTS(artist, artist_id, name, id, venue, city, state, date_UTC, sale_start, lowest_price, highest_price, create_ts) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);'
+
+                                    cursor.execute(event_QL, insert_tuple)
+                                    connection.commit()
+
+                                    """DYNAMO WAY TO DO IT"""
+                                    record_key = (spotify_artist + event_name + event_venue + event_city + event_state + str(
+                                        date_UTC) + str(current_date))
+
+                                    try:
+                                        dynamotable.put_item(
+                                            Item={
+                                                'Record_ID': record_key,
+                                                'name': event_name,
+                                                'artist': spotify_artist,
+                                                'city': event_city,
+                                                'date_UTC': str(date_UTC),
+                                                'state': event_state,
+                                                'venue': event_venue,
+                                                'create_ts': str(current_date),
+                                                'lowest_price': int(event_lowest_price),
+                                                'highest_price': int(event_highest_price)
+                                            }
+                                        )
+
+                                    except ValueError as NoPrice:
+                                        try:
+                                            dynamotable.put_item(
+
+                                                Item={
+                                                    'Record_ID': record_key,
+                                                    'name': event_name,
+                                                    'artist': spotify_artist,
+                                                    'city': event_city,
+                                                    'date_UTC': str(date_UTC),
+                                                    'state': event_state,
+                                                    'venue': event_venue,
+                                                    'create_ts': str(current_date)
+                                                }
+                                            )
+
+                                        except ValueError as MissingData:
+                                            print('Too much missing data')
+
+                                    """S3 NEW DATA CREATION"""
+                                    """S3 NEW DATA CREATION"""
+                                    event_array=pd.DataFrame([[spotify_artist, spotify_artist_id, event_name, event_id, event_venue, event_city, event_state, date_UTC, event_sale_start, event_lowest_price, event_highest_price, current_date]],
+                                                  columns=['artist', 'artist_id', 'name', 'id', 'venue', 'city', 'state', 'date_UTC', 'sale_start', 'lowest_price', 'highest_price', 'create_ts'])
+
+
+                                    temp_df = temp_df.append(event_array, ignore_index=True, sort=True)
 
                     except KeyError as NoEmbedded:
                         print('No Embedded Data')
@@ -461,6 +469,9 @@ def ticketmaster_event_pull():
         """S3 RESOURCE"""
         s3_resource = boto3.resource('s3')
 
+
+        print(temp_df['date_UTC'])
+
         """MAKE DICT FROM TEMP DATAFRAME"""
         temp_dict = temp_df.to_dict('records')
 
@@ -478,7 +489,7 @@ def ticketmaster_event_pull():
         """S3 PKL FROM APPENDED DICT"""
         appended_dict_stg = json.dumps(appended_dict, default=myconverter)
         s3_resource.Object(bucket, key).put(Body=appended_dict_stg)
-        s3_resource.Object(bucket, key).put(Body=appended_dict_stg)
+        # s3_resource.Object(bucket, key).put(Body=appended_dict_stg)
         print('successfully overwrote the PKL file which now has ' + str(len(appended_dict)) + ' records')
 
         """S3 JSON FROM APPENDED DICT"""
@@ -488,14 +499,14 @@ def ticketmaster_event_pull():
         print('successfully overwrote main JSON file which now has ' + str(len(appended_dict)) + ' records')
 
         """ATHENA CREATE DROP AND CREATE MAIN TABLE"""
-        columns_string = str(temp_df.columns.values).replace("['", "`").replace(" '", " `").replace("']", '` string').replace("' ", "` string, ").replace("'\n", "` string, ").replace("`create_ts` string", "`create_ts` timestamp")
+        columns_string = str(temp_df.columns.values).replace("['", "`").replace(" '", " `").replace("']", '` string').replace("' ", "` string, ").replace("'\n", "` string, ").replace("`create_ts` string", "`create_ts` timestamp").replace("`date_UTC` string", "`date_utc` timestamp")
         athena_drop_main()
         time.sleep(10)
         athena_create_main(columns_string)
 
 
         """ATHENA DROP AND CREATE TEMP TABLE"""
-        columns_string =  str(temp_df.columns.values).replace("['", "`").replace(" '", " `").replace("']", '` string').replace("' ", "` string, ").replace("'\n", "` string, ").replace("`create_ts` string", "`create_ts` timestamp")
+        columns_string =  str(temp_df.columns.values).replace("['", "`").replace(" '", " `").replace("']", '` string').replace("' ", "` string, ").replace("'\n", "` string, ").replace("`create_ts` string", "`create_ts` timestamp").replace("`date_UTC` string", "`date_utc` timestamp")
         athena_drop_temp()
         time.sleep(10)
         athena_create_temp(columns_string)

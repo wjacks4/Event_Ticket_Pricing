@@ -147,25 +147,24 @@ def create_ticketmaster_s3():
     connection = connection = pymysql.connect(host='ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com',
                                               user='tickets_user', password='tickets_pass', db='tickets_db')
 
-    ticketmaster_df = pd.read_sql('SELECT * FROM TICKETMASTER_EVENTS WHERE DATE_UTC IS NULL', con=connection)
-    
-    test = ticketmaster_df['date_UTC']
-    print(test)
-    
-    test2 = ticketmaster_df.where(ticketmaster_df['date_UTC']==None)
-    print(test2)
-    
-    test3 = test2.replace(['', ''])
+    ticketmaster_df = pd.read_sql('SELECT * FROM TICKETMASTER_EVENTS WHERE date_UTC != "0000-00-00 00:00:00" and date_UTC != "" and date_UTC is not null', con=connection)
+    print('df pulled locally')
+    ticketmaster_json = ticketmaster_df.to_json(orient='records')
+    print('df has been turned to json')
+    ticketmaster_json_stg = ticketmaster_json.replace('[{', '{').replace(']}', '}').replace('},', '}\n')
+    print('json reformatted')
+    s3_resource = boto3.resource('s3')
 
-    # print((ticketmaster_df).head(20))
+    bucket='willjeventdata'
+    key='ticketmaster_events.pkl'
+    key_json = 'ticketmaster/main data/ticketmaster_events.json'
 
-    # ticketmaster_json = ticketmaster_df.to_json(orient='records')
 
-    # s3_resource = boto3.resource('s3')
+    s3_resource.Object(bucket,key).put(Body=ticketmaster_json)
+    s3_resource.Object(bucket,key_json).put(Body=ticketmaster_json_stg)
+    print('json loaded into s3')
 
-    # bucket='willjeventdata'
-    # key='ticketmaster_events.pkl'
-    # s3_resource.Object(bucket,key).put(Body=ticketmaster_json)
+
 
 create_ticketmaster_s3()
         
