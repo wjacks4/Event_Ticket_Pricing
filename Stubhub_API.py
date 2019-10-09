@@ -226,6 +226,8 @@ def stubhub_event_pull(temp_df, artist_in, artist_url, cursor_in, connection_in,
         print(KeyError)
         print('exceeded quota for stubhub API')
 
+        return temp_df
+
 
 def pull_caller(inner_func):
     
