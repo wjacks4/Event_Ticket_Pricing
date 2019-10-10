@@ -5,39 +5,22 @@ PURPOSE - TEST
 """
 
 import json
-from dateutil import parser
 import time
-import os
-import subprocess
 import urllib
 import urllib.request
 import pandas as pd
 import unidecode
-from unidecode import unidecode
 import requests
 import urllib
-from urllib import parse
-import sys
 import base64
 import numpy as np
 import re
 import pymysql
-# import MySQLdb
-import base64
 import datetime
-from datetime import datetime
-from collections import defaultdict
 import pickle
 import pprint
-from pprint import pprint
-
-import urllib
-import pandas as pd
-import numpy as np
-import json
-import requests
-
 import boto3
+import gzip
 
 """
 GET ARTIST LIST FROM MYSQL DB
@@ -166,7 +149,7 @@ def create_ticketmaster_s3():
 
 
 
-create_ticketmaster_s3()
+# create_ticketmaster_s3()
         
         
 def create_seatgeek_s3():
@@ -210,7 +193,70 @@ def pickle_pull():
     print(master_event_df.head(10))
 
 # pickle_pull()
+    
+    
+    
+"""
+TEST TURNING ATHENA TABLE INTO JSON IN S3
+"""
 
+session = boto3.Session()
+client = session.client('athena', region_name = params["region"])
+
+params = {
+    'region': 'us-west-2',
+    'database': 'tickets_db',
+    'bucket': 'willjeventdata',
+    'path': '/stubhub/staged data/daily_lowest',
+    'query': ("CREATE TABLE TEST WITH ( format = 'JSON', external_location = 's3://willjeventdata/stubhub/staged data/daily_lowest/') AS SELECT * FROM stubhub_daily_lowest LIMIT 100")
+    }
+
+def athena_query(client, params):
+    
+    response = client.start_query_execution(
+            QueryString=params['query'],
+            QueryExecutionContext={
+                'Database': params['database']
+            }
+            #,
+            #ResultConfiguration={
+            #    'OutputLocation': 's3://' + params['bucket'] + params['path']
+            #}
+    )
+    return response
+
+
+def athena_to_s3(session, params):
+    client = session.client('athena', region_name = params["region"])
+    execution = athena_query(client, params)
+    execution_id = execution["QueryExecutionId"]
+    state = 'RUNNING'
+    
+    while (state in ['RUNNING']):
+        response = client.get_query_execution(QueryExecutionId = execution_id)
+        
+        if 'QueryExecution' in response and 'Status' in response['QueryExecution'] and 'State' in response['QueryExecution']['Status']:
+            state = response['QueryExecution']['Status']['State']
+            
+            if state =='FAILED':
+                return False
+            elif state=='SUCCEEDED':
+                s3_path = response['QueryExecution']['ResultConfiguration']['OutputLocation']
+                filename = re.findall('.*./(.*)', s3_path)[0]
+                return filename
+            
+        time.sleep(1)
+        
+        
+def cleanup(session, params):
+    s3 = session.resource('s3')
+    my_bucket = s3.Bucket(params['bucket'])
+    for item in my_bucket.objects.filter(Prefix=params['path']):
+        item.delete()
+
+# cleanup(session, params)
+
+athena_query(client, params)
 
 
 
