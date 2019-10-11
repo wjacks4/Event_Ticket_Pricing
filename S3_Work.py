@@ -218,10 +218,10 @@ def athena_query(client, params):
             QueryExecutionContext={
                 'Database': params['database']
             }
-            #,
-            #ResultConfiguration={
-            #    'OutputLocation': 's3://' + params['bucket'] + params['path']
-            #}
+            ,
+            ResultConfiguration={
+                'OutputLocation': 's3://' + params['bucket'] + params['path']
+            }
     )
     return response
 

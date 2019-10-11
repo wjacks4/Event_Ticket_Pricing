@@ -303,7 +303,7 @@ def ticketmaster_pull_caller():
 
     """
     """GET ARTISTS DATAFRAME"""
-    artists_df = data_fetch_pymysql().head(10)
+    artists_df = data_fetch_pymysql().head(250)
 
     """CURRENT DATE ASSIGNMENT"""
     current_date = datetime.now()
