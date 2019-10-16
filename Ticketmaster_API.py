@@ -115,14 +115,14 @@ def athena_create_temp(main_columns):
 def athena_create_main(main_columns):
     querystring = str(('create external table if not exists ticketmaster_events'
                        ' (' + main_columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" \
-                     LOCATION "s3://willjeventdata/ticketmaster/test data/" TBLPROPERTIES ("has_encrypted_data"="false")')
+                     LOCATION "s3://willjeventdata/ticketmaster/main data/" TBLPROPERTIES ("has_encrypted_data"="false")')
                       )
     print(querystring)
     athena_client = boto3.client('athena')
     response = athena_client.start_query_execution(
         QueryString=('create external table if not exists ticketmaster_events'
                      ' (' + main_columns + ') ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe" LOCATION \
-                     "s3://willjeventdata/ticketmaster/test data/" TBLPROPERTIES ("has_encrypted_data"="false")'
+                     "s3://willjeventdata/ticketmaster/main data/" TBLPROPERTIES ("has_encrypted_data"="false")'
                      ),
         QueryExecutionContext={'Database': 'tickets_db'},
         ResultConfiguration={'OutputLocation': 's3://aws-athena-results-tickets-db/ticketmaster/'}
