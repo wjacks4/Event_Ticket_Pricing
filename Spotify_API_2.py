@@ -14,6 +14,9 @@ import base64
 import datetime
 from datetime import datetime
 import json
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey
+from sqlalchemy .ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, relationship
 
 
 def generate_token():
@@ -28,7 +31,6 @@ def generate_token():
 	)
 	
 	token = credentials.get_access_token()
-	# print(token)
 	return token
 
 
@@ -39,19 +41,61 @@ def id_gen(name):
 	"""
 
 	raw_Dat = spotify.search(q=name, type='playlist')
-
-	encoded_Dat = str(raw_Dat).encode('utf-8')
 	
 	playlist_ID = raw_Dat['playlists']['items'][0]['id']
-	playlist_Name = raw_Dat['playlists']['items'][0]['name']
 	playlist_User = raw_Dat['playlists']['items'][0]['owner']['id']
-	
-	# print(playlist_ID)
-	# print(playlist_Name)
-	# print(playlist_User)
+
 	
 	return playlist_ID, playlist_User
 
+
+
+
+"""GLOBAL DATA"""
+Spotify_client_ID = 'ab3b70083f5f469188f8e49b79d5eadb'
+Spotify_client_secret = '6ecf81925e2740c9adecaad28685457a'
+Spotify_Playlist_list = pd.read_csv('C:/Users/wjack/Desktop/Event_Ticket_Pricing/Event_Ticket_Pricing/Data/Spotify Chart Names.csv')
+
+Base = declarative_base()
+
+class Artist(Base):
+	__tablename__ = "artists_test"
+
+	# id = Column('id', Integer, primary_key=True)
+	# username = Column ('username', String(50), unique = True)
+
+	artist_name = Column('artist', String(50), unique=True, primary_key=True)
+	genre = Column('genre', String(50))
+	followers = Column('genre', Integer)
+	popularity = Column('popularity', Integer)
+	playlist = Column('playlist', String(50))
+
+
+class Artist_trimmed(Base):
+	__tablename__ = "artists_trimmed_ranked_test"
+
+	artist_name = Column('artist', String(50), unique=True, primary_key=True)
+	genre = Column('genre', String(50))
+	followers = Column('genre', Integer)
+	popularity = Column('popularity', Integer)
+	playlist = Column('playlist', String(50))
+
+
+engine = create_engine('mysql://tickets_user:tickets_pass@ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com:3306/tickets_db', echo=True)
+Base.metadata.create_all(bind=engine)
+Session = sessionmaker(bind=engine)
+
+session = Session()
+artist = Artist()
+artist.artist_name = 'TEST artist name'
+artist.genre = 'TEST genre name'
+artist.followers = 12
+artist.popularity = 12
+artist.playlist = 'TEST playlist'
+
+session.add(artist)
+session.commit()
+session.close()
 
 
 
@@ -96,6 +140,11 @@ def playlist_artists(user_in, ID_in):
 			artist_df = artist_df.append(artist_array)
 		
 	return artist_df
+
+
+
+
+
 
 
 def artists_to_db(db_endpoint):
@@ -159,10 +208,22 @@ def artists_to_db(db_endpoint):
 			followers = ((artist[1]['artist_followers']))
 			popularity = ((artist[1]['artist_popularity']))
 
-			artist_QL = 'INSERT INTO Artists_expanded(artist, genre, followers, popularity, playlist, artist_id) VALUES ("%s", "%s", "%s", "%s", "%s", "%s");' %(artist_name, each_genre, followers, popularity, each_Name, id)
+			artist = Artist()
+			artist.artist_name = artist_name
+			artist.genre = id
+			artist.followers = followers
+			artist.popularity = popularity
+			artist.playlist = each_Name
 
-			cursor.execute(artist_QL)
-			connection.commit()
+			# artist_QL = 'INSERT INTO Artists_test(artist, genre, followers, popularity, playlist, artist_id) VALUES ("%s", "%s", "%s", "%s", "%s", "%s");' %(artist_name, each_genre, followers, popularity, each_Name, id)
+
+			# cursor.execute(artist_QL)
+			# connection.commit()
+
+			session.add(artist)
+
+	session.commit()
+	session.close()
 
 	"""DE-DUPLICATE AND RANK ARTISTS LIST"""
 	drop_QL = 'DROP TABLE Artists_trimmed_ranked;'
@@ -176,110 +237,19 @@ def artists_to_db(db_endpoint):
 
 
 
-class keys:
-
-	"""
-
-	STREAMLINE RETREIVAL OF STUBHUB ACCESS TOKENS BY PASSING THIS CLASS EACH ACCOUNT'S
-	- KEY
-	- SECRET
-	- USERNAME
-	- PASSWORD
-
-	"""
-
-	def __init__(self, key, secret, username, password):
-
-		self.key_encode = (base64.standard_b64encode(key + b":" + secret)).decode("utf-8")
-
-		base_url = 'https://api.stubhub.com/sellers/oauth/accesstoken'
-		query_params = 'grant_type=client_credentials'
-		request_url = (base_url + "?" + query_params)
-		header_auth = ('Basic ' + (base64.standard_b64encode(key + b":" + secret)).decode("utf-8"))
-
-		payload = {"username": username, "password": password}
-		headers = {"Authorization": header_auth, "Content-Type": "application/json"}
-
-		req = requests.post(request_url, data=json.dumps(payload), headers=headers)
-		json_obj = req.json()
-		self.token = json_obj['access_token']
 
 
 
-
-
-def artists_with_events(access_token, db_endpoint):
-
-	connection = db_endpoint
-	cursor = connection.cursor()
-
-	# Artists_df = data_fetch_pymysql().head(500)
-	Artists_DF = (pd.read_sql('SELECT * FROM Artists_trimmed_ranked WHERE current_followers >= 20000 and current_followers <= 500000 order by current_followers desc', con=connection)).head(500)
-
-	base_url = 'https://api.stubhub.com/sellers/search/events/v3'
-
-	"""STAGE SQL TABLES"""
-	drop_QL = 'DROP TABLE ARTISTS_WITH_EVENTS;'
-	cursor.execute(drop_QL)
-	connection.commit()
-
-	create_QL = 'CREATE TABLE ARTISTS_WITH_EVENTS(artist varchar (256), ' \
-				'artist_id varchar(256), ' \
-				'popularity int, ' \
-				'current_followers int,' \
-				'event_count int);'
-	cursor.execute(create_QL)
-	connection.commit()
-
-	for artist_dat in Artists_DF.iterrows():
-
-		"""EXTRACT ARTIST STRINGS FROM DF"""
-		spotify_artist = artist_dat[1]['artist']
-		spotify_artist_id = artist_dat[1]['artist_id']
-		spotify_artist_popularity = artist_dat[1]['popularity']
-		spotify_artist_followers = artist_dat[1]['current_followers']
-
-		"""ENCODE ARTIST STRINGS FOR STUBHUB API CALL"""
-		artist_encode = spotify_artist.replace(" ", "%20")
-		query_params = ("q=" + artist_encode + "&" + "rows=100")
-		artist_url = (base_url + "?" + query_params)
-
-		try:
-			Auth_Header = ("Bearer " + access_token.token)
-			headers = {"Authorization": Auth_Header, "Accept": "application/json"}
-			req = requests.get(artist_url, headers=headers)
-			json_obj = req.json()
-
-			event_list = json_obj['events']
-			event_count = len(event_list)
-
-			insert_tuple = (spotify_artist, spotify_artist_id, spotify_artist_popularity, spotify_artist_followers, event_count)
-
-			insert_QL = 'INSERT INTO `ARTISTS_WITH_EVENTS` (`artist`, `artist_id`, `popularity`, `current_followers`, `event_count`) VALUES (%s, %s, %s, %s, %s)'
-
-			cursor.execute(insert_QL, insert_tuple)
-			connection.commit()
-
-		except KeyError:
-			print(KeyError)
-			# print('exceeded quota for stubhub API')
-
-
-"""GLOBAL DATA"""
-Spotify_client_ID = 'ab3b70083f5f469188f8e49b79d5eadb'
-Spotify_client_secret = '6ecf81925e2740c9adecaad28685457a'
-Spotify_Playlist_list = pd.read_csv('C:/Users/wjack/Desktop/Event_Ticket_Pricing/Event_Ticket_Pricing/Data/Spotify Chart Names.csv')
-
-
-"""DB ENDPOINT DEFINITION"""
-db = pymysql.connect(host='ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', user='tickets_user', password='tickets_pass', db='tickets_db')
-
-"""SPOTIFY FUNCTION CALLS"""
-playlist_IDs=pd.DataFrame()
-generate_token()
-spotify = spotipy.Spotify(auth=generate_token())
-artists_to_db(db)
-
-"""STUBHUB FUNCTION CALLS"""
-token = keys(b'knI4wisTkeBR4txGgGzUiHvpgAHPfWp8', b'Y37FpPHhIiHJdrWL', 'pluug3123@gmail.com', 'Hester3123')
-artists_with_events(token, db)
+#
+# """DB ENDPOINT DEFINITION"""
+# db = pymysql.connect(host='ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', user='tickets_user', password='tickets_pass', db='tickets_db')
+#
+# """SPOTIFY FUNCTION CALLS"""
+# playlist_IDs=pd.DataFrame()
+# generate_token()
+# spotify = spotipy.Spotify(auth=generate_token())
+# artists_to_db(db)
+#
+# """STUBHUB FUNCTION CALLS"""
+# token = keys(b'knI4wisTkeBR4txGgGzUiHvpgAHPfWp8', b'Y37FpPHhIiHJdrWL', 'pluug3123@gmail.com', 'Hester3123')
+# artists_with_events(token, db)
