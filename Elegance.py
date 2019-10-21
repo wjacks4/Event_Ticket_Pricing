@@ -21,8 +21,8 @@ class Credential:
     Spotify_client_secret: str
     uses: int
 
-cred_list = [Credential(Spotify_client_ID = "ab3b70083f5f469188f8e49b79d5eadb", Spotify_client_secret = "6ecf81925e2740c9adecaad28685457a", uses = math.inf)]
-
+cred_list = [Credential(Spotify_client_ID = "ab3b70083f5f469188f8e49b79d5eadb", Spotify_client_secret = "6ecf81925e2740c9adecaad28685457a", uses = 10),
+             Credential(Spotify_client_ID = "TEST", Spotify_client_secret = "TEST_SECRET", uses = 10)]
 
 def get_tokens(cred_list):
 
@@ -80,12 +80,12 @@ def id_gen(name):
 
 
 
-def artists_to_db(db_endpoint):
+def artists_to_db():
 
 	playlist_IDs=pd.DataFrame()
 
 	"""LOOP THROUGH MANUALLY ENTERED LIST OF SPOTIFY PLAYLISTS, CALLING FUNCTIONS ON EACH PLAYLIST"""
-	for playlist in Spotify_Playlist_list.iterrows():
+	for playlist in Spotify_Playlist_list.head(20).iterrows():
 
         
         
@@ -95,7 +95,10 @@ def artists_to_db(db_endpoint):
 		playlist_ID = id_gen(title)[0]
 		playlist_User = id_gen(title)[1]
 		
-		each_Playlist = pd.DataFrame([[playlist_Name, genre, playlist_ID, playlist_User]], columns=['playlist_Name', 'genre', 'playlist_ID', 'playlist_User'])
+        print(playlist_Name)
+        
+
+artists_to_db()
 
 
 
