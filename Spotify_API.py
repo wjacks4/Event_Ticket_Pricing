@@ -32,7 +32,7 @@ def generate_token():
 	)
 	
 	token = credentials.get_access_token()
-	# print(token)
+	print(token)
 	return token
 
 
@@ -55,6 +55,7 @@ def id_gen(name):
 	# print(playlist_User)
 	
 	return playlist_ID, playlist_User
+
 
 
 def playlist_artists(user_in, ID_in):
@@ -293,17 +294,17 @@ Spotify_Playlist_list = pd.read_csv('C:/Users/wjack/Desktop/Event_Ticket_Pricing
 
 
 """DB ENDPOINT DEFINITION"""
-db = pymysql.connect(host='ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', user='tickets_user', password='tickets_pass', db='tickets_db')
+# db = pymysql.connect(host='ticketsdb.cxrz9l1i58ux.us-west-2.rds.amazonaws.com', user='tickets_user', password='tickets_pass', db='tickets_db')
 
 """SPOTIFY FUNCTION CALLS"""
 playlist_IDs=pd.DataFrame()
 generate_token()
 spotify = spotipy.Spotify(auth=generate_token())
-artists_to_db(db)
+# artists_to_db(db)
 
 """STUBHUB FUNCTION CALLS"""
-token = keys(b'knI4wisTkeBR4txGgGzUiHvpgAHPfWp8', b'Y37FpPHhIiHJdrWL', 'pluug3123@gmail.com', 'Hester3123')
-artists_with_events(token, db)
+# token = keys(b'knI4wisTkeBR4txGgGzUiHvpgAHPfWp8', b'Y37FpPHhIiHJdrWL', 'pluug3123@gmail.com', 'Hester3123')
+# artists_with_events(token, db)
 
 
 	
