@@ -9,6 +9,11 @@ from sqlalchemy.orm import sessionmaker, relationship
 import pandas as pd
 import math
 
+"""
+USE NAMESPACES - USE CLASSES ACROSS MULTIPLE .PYs WITH import util
+If you put an init.py in the directory
+"""
+
 @dataclass
 class Credential:
 
@@ -16,7 +21,8 @@ class Credential:
 	Spotify_client_secret: str
 	uses: int
 
-cred_list = [Credential(Spotify_client_ID = "ab3b70083f5f469188f8e49b79d5eadb", Spotify_client_secret = "6ecf81925e2740c9adecaad28685457a", uses = 10)]
+cred_list = [Credential(Spotify_client_ID = "ab3b70083f5f469188f8e49b79d5eadb", Spotify_client_secret = "6ecf81925e2740c9adecaad28685457a", uses = math.inf)]
+
 
 def get_tokens(cred_list_in):
 
@@ -25,12 +31,11 @@ def get_tokens(cred_list_in):
 	"""
 	for cred in cred_list_in:
 		token = generate_token(cred.Spotify_client_ID, cred.Spotify_client_secret)
-		yield from itertools.repeat(token, cred.n)
+		yield from itertools.repeat(token, cred.uses)
 
 
 def generate_token(client_ID_in, client_secret_in):
 
-	print(client_ID_in)
 	"""
 	GETS SPOTIFY ACCESS TOKEN
 	"""
@@ -40,7 +45,7 @@ def generate_token(client_ID_in, client_secret_in):
 	)
 
 	token = credentials.get_access_token()
-	print(token)
+	# print(token)
 	return token
 
 Spotify_Playlist_list = pd.read_csv('C:/Users/wjack/Desktop/Event_Ticket_Pricing/Event_Ticket_Pricing/Data/Spotify Chart Names.csv')
@@ -49,8 +54,6 @@ Spotify_Playlist_list = pd.read_csv('C:/Users/wjack/Desktop/Event_Ticket_Pricing
 """
 INITIALIZE ACCESS TO SPOTIPY ENGINE
 """
-
-get_tokens(cred_list)
 
 spotify_access = spotipy.Spotify(auth=get_tokens(cred_list))
 
@@ -69,12 +72,12 @@ def id_gen():
 
 		encoded_Dat = str(raw_Dat).encode('utf-8')
 
-		# playlist_ID = raw_Dat['playlists']['items'][0]['id']
-		# playlist_Name = raw_Dat['playlists']['items'][0]['name']
-		# playlist_User = raw_Dat['playlists']['items'][0]['owner']['id']
+		playlist_ID = raw_Dat['playlists']['items'][0]['id']
+		playlist_Name = raw_Dat['playlists']['items'][0]['name']
+		playlist_User = raw_Dat['playlists']['items'][0]['owner']['id']
 
-		# print(playlist_ID)
-		# print(playlist_Name)
-		# print(playlist_User)
+		print(playlist_ID)
+		print(playlist_Name)
+		print(playlist_User)
 
 # id_gen()

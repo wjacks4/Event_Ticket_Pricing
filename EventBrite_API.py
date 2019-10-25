@@ -25,7 +25,7 @@ API_key = "QBBZEWV5XWAAFECR3D"
 API_secret = "7NG5DUZEJBCIGLFJWZRTQ3R7SE3UXUDCA4DFD7U3MFC57UQF45"
 OAuth_token = "ZG7IKNHFJFFYSXDN4R5K"
 Anon_OAuth_token = "SWIBI6XDBCO2UP5AOA7Y"
-base_string = "https://www.eventbriteapi.com/v3/events/search/?token=ZG7IKNHFJFFYSXDN4R5K&"
+base_string = "https://www.eventbriteapi.com/v3/events/search/?token=ZG7IKNHFJFFYSXDN4R5K"
 
 
 def data_fetch_pymysql():
@@ -127,7 +127,7 @@ def eventbrite_event_pull():
     """
 
     """GET ARTISTS DATAFRAME"""
-    artists_df = data_fetch_pymysql().head(250)
+    artists_df = data_fetch_pymysql().head(10)
 
     """CURRENT DATE ASSIGNMENT"""
     current_date = datetime.now()
@@ -158,6 +158,7 @@ def eventbrite_event_pull():
             artist_encode = (spotify_artist.replace("&", " ")).replace(" ", "%20")
 
             artist_url = (base_string + "expand=ticket_availability,external_ticketing,venue&" + "q=" + artist_encode)
+            print(artist_url)
 
             try:
 

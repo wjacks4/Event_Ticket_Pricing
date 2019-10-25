@@ -6,6 +6,7 @@ import numpy as np
 import json
 import requests
 import boto3
+from pyathena import connect
 
 """IMPORT PICKLE FROM S3, SAVE AS LARGE JSON OBJ"""
 
@@ -82,18 +83,30 @@ class athena_table_creator:
                            
    
 #seatgeek_athena = athena_table_creator('seatgeek')
-ticketmaster_athena = athena_table_creator('ticketmaster')
+#ticketmaster_athena = athena_table_creator('ticketmaster')
 #stubhub_athena = athena_table_creator('stubhub')
 #eventbrite_athena = athena_table_creator('eventbrite')
 
 #seatgeek_athena.athena_drop_main()
 #seatgeek_athena.athena_daily_lowest()
 
-ticketmaster_athena.athena_drop_main()
-ticketmaster_athena.athena_daily_lowest()
+#ticketmaster_athena.athena_drop_main()
+#ticketmaster_athena.athena_daily_lowest()
 
 #stubhub_athena.athena_drop_main()
 #stubhub_athena.athena_daily_lowest()
 
 #eventbrite_athena.athena_drop_main()
 #eventbrite_athena.athena_daily_lowest()
+
+
+
+
+
+class read_athena():
+
+    conn = connect(s3_staging_dir='s3://willjeventdata/seatgeek/main data',
+                     region_name='us-west-2')
+
+    df = pd.read_sql("select * from tickets_db.seatgeek_events limit 100", conn)
+read_athena()

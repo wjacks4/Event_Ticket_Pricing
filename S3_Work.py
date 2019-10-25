@@ -256,7 +256,7 @@ def cleanup(session, params):
 
 # cleanup(session, params)
 
-athena_query(client, params)
+# athena_query(client, params)
 
 
 
