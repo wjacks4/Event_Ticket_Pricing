@@ -1,5 +1,5 @@
 import pymysql
-import pandas
+import pandas as pd
 
 print('HELLO LAMBDA')
 
@@ -11,5 +11,7 @@ def data_fetch_pymysql():
 
     artists_df = pd.read_sql('SELECT * FROM ARTISTS_WITH_EVENTS order by event_count desc, current_followers desc', con=connection)
     return artists_df
-    
-# get_columns()
+
+test_df = data_fetch_pymysql()
+
+print(test_df.head(10))
